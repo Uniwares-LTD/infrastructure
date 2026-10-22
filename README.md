@@ -9,7 +9,8 @@ changed deployments. The default branch is `main`.
 
 - [VPS inventory](docs/inventory/srv1.md): dated observations and unresolved checks.
 - [Architecture](docs/architecture.md): accepted preferences and proposed design.
-- [Operations](docs/operations.md): access, secrets, upgrades and recovery guidance.
+- [Staging bootstrap runbook](docs/operations.md): start here for the configuration
+  checklist, eight checkpoints, verification and failure/resume procedures.
 - [Implementation plan](docs/implementation-plan.md): pending delivery and acceptance.
 - [Agent guidance](AGENTS.md): evidence and change boundaries.
 

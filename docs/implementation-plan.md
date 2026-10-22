@@ -1,5 +1,9 @@
 # Shared infrastructure implementation plan
 
+Use the [staging bootstrap runbook](operations.md) to execute the sequence below.
+Its configuration checklist and checkpoint table own operational progress; this
+document owns delivery scope. The runbook is documentation, not installed tooling.
+
 Documentation initialized on 2026-10-22. No executable setup, live provisioning,
 service transfer or deployment is completed by this documentation pass.
 See [architecture](architecture.md), [operations](operations.md) and
