@@ -3,11 +3,13 @@
 - Read [the inventory](docs/inventory/srv1.md), [architecture](docs/architecture.md),
   [operations](docs/operations.md) and [implementation plan](docs/implementation-plan.md)
   before infrastructure work. Revalidate time-sensitive observations before applying changes.
-- Follow the operations runbook checkpoint order. Record execution location, owner,
+- Follow the operations runbook's three-phase order. Record execution location, owner,
   reviewed revision, verification and next action. Stop dependent live steps at
   `implementation required`; never invent a command for tooling that does not exist.
   Reuse verified discovery, collect missing inputs together and resume partial setup
-  after inspecting state. Do not blindly repeat successful mutations.
+  after inspecting state. Do not blindly repeat successful mutations. Keep existing
+  app workers/Redis/Nginx for initial staging; shared services and job refactors are
+  later milestones, not implicit first-release prerequisites.
 - Label observed state, accepted preferences, recommendations and unresolved checks.
   A package candidate, passing local check or published document is not live acceptance.
 - Preserve existing services and their owners. Tunnel/Dify/Booklet ownership remains
