@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform/
+secrets/
+backups/
+output/
+node_modules/
+.DS_Store
