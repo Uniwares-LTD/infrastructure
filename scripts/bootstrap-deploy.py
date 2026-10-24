@@ -44,9 +44,10 @@ def extract(archive, digest, destination):
                 raise ValueError('Unsafe archive path')
             if not (item.isdir() or item.isfile()):
                 raise ValueError('Archive links/special files forbidden')
-            if (any(part.startswith('.') for part in path.parts) or path.suffix in ('.pem', '.key', '.env') or
+            hidden = any(part.startswith('.') and not (part == '.well-known' and path.parts[:3] == ('src', 'app', '.well-known')) for part in path.parts)
+            if (hidden or path.suffix in ('.pem', '.key', '.env') or
                     path.as_posix() == 'deploy/config.json' or 'secrets' in path.parts or
-                    'credentials' in path.name or 'service-account' in path.name):
+                    (path.suffix == '.json' and ('credentials' in path.name or 'service-account' in path.name))):
                 raise ValueError('Private/hidden archive paths forbidden')
             total += item.size
             if total > 128 * 1024 * 1024:

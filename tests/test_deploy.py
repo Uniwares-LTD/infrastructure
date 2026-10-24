@@ -54,14 +54,15 @@ class DeployTests(unittest.TestCase):
             with self.assertRaises(ValueError): bootstrap.public_key(value)
 
     def test_bundle_rejects_paths_links_and_checksum(self):
-        for name,kind in [('src/safe.txt',tarfile.REGTYPE),('../escape',tarfile.REGTYPE),('src/link',tarfile.SYMTYPE),('src/.env',tarfile.REGTYPE)]:
+        allowed=('src/safe.txt','src/app/.well-known/assetlinks.json/route.ts','src/lib/server/runs/credentials.ts')
+        for name,kind in [(name,tarfile.REGTYPE) for name in allowed]+[('../escape',tarfile.REGTYPE),('src/link',tarfile.SYMTYPE),('src/.env',tarfile.REGTYPE),('deploy/credentials.json',tarfile.REGTYPE)]:
             with self.subTest(name=name), tempfile.TemporaryDirectory() as temporary:
                 root=Path(temporary); archive=root/'input.tar'; destination=root/'out'; destination.mkdir()
                 with tarfile.open(archive,'w') as tar:
                     member=tarfile.TarInfo(name); member.type=kind; member.size=1 if kind==tarfile.REGTYPE else 0
                     tar.addfile(member,io.BytesIO(b'x') if member.size else None)
                 digest=hashlib.sha256(archive.read_bytes()).hexdigest()
-                if name=='src/safe.txt':
+                if name in allowed:
                     extracted=bootstrap.extract(archive,digest,destination)
                     self.assertEqual((extracted/name).read_text(),'x')
                     before=bootstrap.tree_contents(extracted); (extracted/name).write_text('changed')
