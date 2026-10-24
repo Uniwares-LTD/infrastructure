@@ -33,9 +33,15 @@ staging applications; app roles and business data remain in their app databases.
 Tags do not replace Dify app bindings. Existing Dify apps need an explicit migration
 before applying the convention; documentation does not retag them.
 
-## Proposed topology
+## First deployment and later topology
 
-Initial staging: existing Cloudflare Tunnel -> new shared gateway -> application
+First staging retains the existing Unibase Compose runtime: app, maintenance worker,
+AI worker, app Redis and private Nginx. The existing tunnel owner routes the staging
+hostname to that Nginx loopback listener. Select a non-overlapping app subnet and
+keep legacy public Nginx and Dify Redis unchanged. The shared conventions above
+remain the target; shared-service and job refactors are not first-release gates.
+
+After staging works: existing Cloudflare Tunnel -> new shared gateway -> application
 web containers. The legacy public Nginx continues serving its current routes.
 The shared gateway can use Caddy with internal HTTP while the tunnel supplies the
 public HTTPS entrypoint. The exact listener/network and owner-managed tunnel route
@@ -50,7 +56,7 @@ service-name routing. Removing per-app Nginx and fixed ingress subnets also requ
 reworking trusted-proxy headers and preserving Firebase auth-helper and streaming
 behavior. Do not remove those boundaries by documentation alone.
 
-Keep job logic inside the application. Proposed reusable systemd timers invoke
+Later, move job execution into the application. Proposed reusable systemd timers invoke
 three authenticated, bounded local endpoints: AI, events and maintenance. Requests
 must await work; retain durable retries and ownership/accounting safeguards. No
 separate Unibase worker containers are required after that refactor is verified.
