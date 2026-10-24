@@ -248,10 +248,28 @@ inventory. This feature concerns IPv4; it does not certify IPv6 filtering.
 
 ### Live follow-up — 2026-10-24
 
-Read-only provider access now confirms tunnel `kids-booklet-vps`, UUID
+Phase 2 refresh at 15:42 UTC: Booklet staging and production were healthy, with no
+temporary Booklet operation container present. Dify/legacy statuses were unchanged;
+Xray continued its pre-existing restart loop. Root filesystem had 39 GiB free.
+Compose remained 2.28.1 and `uniwares-deploy-user` was absent before the root batch.
+
+Authorized Phase 2 provider changes: added `unibase-staging.uniwares.co.uk` to
+Firebase's authorized domains while preserving previous entries; created Atlas
+`unibase_staging` with only database-scoped `readWrite`, restricted to the existing
+`kids-booklet` cluster. The operator updated Google OAuth origins/redirects; the
+previous `redirect_uri_mismatch` response cleared on verification. Runtime inputs
+and the separate shared deployment key remain in protected stores, not Git.
+
+Owner workflow [40109137086](https://github.com/karpishe-experiments/agentic-poc/actions/runs/40109137086)
+applied one DNS addition and one tunnel configuration update, zero deletions, at
+owner revision `50536f0`. Subsequent live verification confirmed the exact staging
+hostname, proxied CNAME and private listener route. This does not establish an
+application deployment: root bootstrap and the first release remain pending.
+
+Earlier Phase 1 read-only provider access confirmed tunnel `kids-booklet-vps`, UUID
 `3d383dc7-335b-4989-b0f2-d1f32a7092f2`, healthy and Cloudflare-managed. Its live
-four hostname routes and fallback match the declaration below. There is no DNS
-record for the proposed Unibase staging hostname. The
+four hostname routes and fallback matched the declaration below. At that point
+there was no DNS record for the proposed Unibase staging hostname. The
 [preparation checklist](../staging-preparation.md) records verified Firebase/Atlas
 bindings and the remaining additive setup scope.
 

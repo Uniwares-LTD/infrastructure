@@ -38,7 +38,7 @@ and non-secret workflow/release identifiers.
 | Phase | Status | Reviewed revision | Verification | Next action |
 | --- | --- | --- | --- | --- |
 | 1 Connect and prepare | Verified (preparation only) | Infrastructure `bb041e4`, Unibase `6edc411`, owner `c182b64` | October 24: provider reads, inventory, 47 Linux deployment tests, 10 Infrastructure tests and 3 Terraform mock tests; separate read-only review | Review the concrete Phase 2 scope; no further Phase 1 operator input |
-| 2 Bootstrap and deploy | Pending | Prepared revisions above; recheck before apply | Installation and live acceptance not performed | Authorize the concrete scope, coordinate Booklet operations and perform the one-time root bootstrap |
+| 2 Bootstrap and deploy | In progress | Merged Infrastructure `90ed66a`, Unibase `bcc3cde`, owner `50536f0`; installed control remains pending | October 24: Booklet healthy again; Firebase domain and scoped Atlas user created; OAuth redirect verified after operator update; repository secrets set; owner apply `40109137086` and live route/DNS check passed | Operator runs the staged checksum-bound root batch; agent verifies restricted access and runs the first staging release |
 | 3 Verify and hand off | Pending | Not selected | Not performed | Verify first healthy staging release |
 
 The goal is one access handoff, one consolidated input request and one authorization

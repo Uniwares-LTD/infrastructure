@@ -4,6 +4,12 @@ Phase 1 preparation is complete; this review package is not evidence of deployme
 [operations runbook](operations.md). Provider credentials remain in the protected
 [local handoff](provider-access.md); this document contains only public bindings.
 
+The checklist below is the Phase 1 snapshot. Phase 2 has since added the provider
+bindings and live tunnel/DNS route; current execution status is canonical in the
+[runbook progress table](operations.md#configuration-and-progress) and
+[dated inventory](inventory/srv1.md#live-follow-up--2026-10-24). Host bootstrap and
+the first application release are still pending.
+
 ## Configuration checklist
 
 | Input | Selected value / evidence |
