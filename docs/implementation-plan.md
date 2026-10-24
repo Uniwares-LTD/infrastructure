@@ -2,7 +2,7 @@
 
 Use the [three-phase runbook](operations.md) for execution and its single
 configuration/progress table. This plan separates first deployment from later
-consolidation. Documentation is complete; live setup and application deployment
+consolidation. Phase 1 preparation is complete; live setup and application deployment
 remain unverified. [Inventory](inventory/srv1.md) records the dated baseline.
 
 Access progress, 2026-10-22: operator key login and the trusted-root host fingerprint
@@ -76,9 +76,10 @@ covers a concrete reviewed scope; unexpected destructive changes require reasses
 
 ## Remaining decisions
 
-For first deployment: actual admin execution path and restricted dispatcher interface,
-tested Compose version, free app port/subnet, hostname and owner-managed route contract,
-shared Firebase/Atlas bindings and protected credential references.
+First-deployment preparation has selected the dispatcher, existing provider bindings,
+hostname, private listener and candidate subnet/Compose versions; see the preparation
+package. Remaining execution checks belong to Phase 2: one-time root installation,
+Compose/Buildx runtime compatibility, provider writes and live route/privilege checks.
 
 For later work: shared network/gateway design, shared Redis location/database allocation,
 job endpoint/timer interfaces, off-host destination/retention/encryption recovery and

@@ -37,8 +37,8 @@ and non-secret workflow/release identifiers.
 
 | Phase | Status | Reviewed revision | Verification | Next action |
 | --- | --- | --- | --- | --- |
-| 1 Connect and prepare | In progress | Discovery helper hash recorded in inventory; bootstrap revision not selected | SSH, scoped discovery and provider bindings verified; local tooling validation/review in progress October 24 | Finish review and publication; live installation stays Phase 2 |
-| 2 Bootstrap and deploy | Pending | Not selected | Implementation required | Preview concrete changes after phase 1 |
+| 1 Connect and prepare | Verified (preparation only) | Infrastructure `bb041e4`, Unibase `6edc411`, owner `c182b64` | October 24: provider reads, inventory, 47 Linux deployment tests, 10 Infrastructure tests and 3 Terraform mock tests; separate read-only review | Review the concrete Phase 2 scope; no further Phase 1 operator input |
+| 2 Bootstrap and deploy | Pending | Prepared revisions above; recheck before apply | Installation and live acceptance not performed | Authorize the concrete scope, coordinate Booklet operations and perform the one-time root bootstrap |
 | 3 Verify and hand off | Pending | Not selected | Not performed | Verify first healthy staging release |
 
 The goal is one access handoff, one consolidated input request and one authorization
@@ -185,7 +185,7 @@ facts, not full Compose renders, environment files or secret-bearing cron entrie
 Full legacy gateway migration, external Redis selection and backup-storage selection
 do not block this initial route through the existing tunnel.
 
-**Implementation required:** prepare only the first-release adaptations:
+The Phase 1 review package provides the first-release adaptations and upgrade plan:
 repository secrets for GitHub Free, public GHCR and anonymous pulls, shared staging
 Firebase credentials, reviewed restricted root-owned deploy operations, a compatible
 Compose upgrade, non-overlapping app networking and supported owner-side routing.
@@ -212,9 +212,9 @@ missing access. Return only unresolved, consequential inputs to the operator.
 ## 2. Bootstrap and deploy
 
 **Owner/location:** agent through the reviewed administrative entrypoint, provider
-interfaces, tunnel owner's process and then Unibase GitHub Actions. **Implementation
-required:** the current scripts are not compatible with every target requirement.
-Phase 1 must provide reviewed tools and a concrete, authorized change scope.
+interfaces, tunnel owner's process and then Unibase GitHub Actions. Use the reviewed
+Phase 1 tooling and concrete scope in [staging preparation](staging-preparation.md);
+installation, provider writes and live acceptance remain pending authorization.
 
 **Action:** preview host/provider state and apply missing compatible setup. Establish
 the shared restricted deploy account/key, select and verify the Compose upgrade,

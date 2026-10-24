@@ -2,7 +2,7 @@
 
 Shared infrastructure inventory, architecture and operating guidance for Uniwares
 applications. It includes documentation and a narrowly scoped discovery helper
-with a one-time root installer. The operator installed this helper and its scoped
+with a one-time root installer, plus reviewed staging bootstrap/dispatcher tooling. The operator installed this helper and its scoped
 sudo rule; agent-side acceptance passed. Operator-created admin access is recorded
 in the inventory. Service bootstrap, ownership transfers and application deployment
 remain pending. The default branch is `main`.
@@ -23,7 +23,7 @@ remain pending. The default branch is `main`.
 
 | Repository | Responsibility |
 | --- | --- |
-| This repository | Canonical shared-host inventory and proposed shared gateway, account, Redis and timer conventions; executable provisioning remains pending |
+| This repository | Canonical shared-host inventory and proposed shared gateway, account, Redis and timer conventions; reviewed account/bootstrap tooling; live installation remains pending |
 | [Unibase](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md) | Reusable application deployment, application configuration, jobs and application backup/restore |
 | [agentic-poc](https://github.com/karpishe-experiments/agentic-poc/blob/master/docs/deployment/contracts.md) | Existing Booklet deployments and current Dify Community, Cloudflare Tunnel/Access and associated Terraform ownership |
 | Derived application repositories | Their own application images, releases, runtime configuration and data |

@@ -1,6 +1,6 @@
 # Unibase staging preparation — 2026-10-24
 
-This is the Phase 1 review package, not evidence of deployment. Start with the
+Phase 1 preparation is complete; this review package is not evidence of deployment. Start with the
 [operations runbook](operations.md). Provider credentials remain in the protected
 [local handoff](provider-access.md); this document contains only public bindings.
 
@@ -45,11 +45,10 @@ root-owned reviewed control bundle. It does not accept uploaded code, arbitrary
 shell commands, sudo commands, Compose mounts, paths or provider credentials.
 The account gets neither Docker-group membership nor general sudo.
 
-Build locally after review/publication, substituting the actual reviewed commit
-printed in the PR, not a branch that may advance:
+Build locally from the reviewed implementation commit, not a branch that may advance:
 
 ```powershell
-python output/infrastructure/scripts/build-control-bundle.py . <reviewed-Unibase-commit> output/unibase-control.tar
+python output/infrastructure/scripts/build-control-bundle.py . 6edc411e3561d6e986990471d4d3c112b7c989ec output/unibase-control.tar
 ```
 
 The agent stages the archive, deployment public key and reviewed Infrastructure
@@ -58,12 +57,18 @@ copies those inputs into a fresh root-only directory, compares their checksums
 with the reviewed local manifest, then runs:
 
 ```bash
-python3 -I bootstrap-deploy.py --bundle unibase-control.tar --sha256 <reviewed-archive-sha256> --public-key deploy.pub
+python3 -I bootstrap-deploy.py --bundle unibase-control.tar --sha256 0c97001724c813b1902c5d1ca7afb742efd13277158869a42bf4fc6d41981545 --public-key deploy.pub
 # Only after reviewing the preview and authorizing Phase 2:
-python3 -I bootstrap-deploy.py --bundle unibase-control.tar --sha256 <reviewed-archive-sha256> --public-key deploy.pub --apply
+python3 -I bootstrap-deploy.py --bundle unibase-control.tar --sha256 0c97001724c813b1902c5d1ca7afb742efd13277158869a42bf4fc6d41981545 --public-key deploy.pub --apply
 ```
 
-Hashes/revisions are intentionally not invented before the final commit. These
+The reviewed control revision is Unibase `6edc411e3561d6e986990471d4d3c112b7c989ec`;
+its archive SHA-256 is `0c97001724c813b1902c5d1ca7afb742efd13277158869a42bf4fc6d41981545`.
+Infrastructure tooling revision is `bb041e4710cb07f55db3f249c690d0eb7b432355`.
+The bootstrap script SHA-256 is `2d266ab04c4a3dab40cd45b59c08df13becba2ec80ee0433f45d45cb74cedf80`;
+dispatcher SHA-256 is `07e4bb081a69260af4103d412f1531aaff92ba156657f325bd30e2e12c4b2007`.
+The actual archive passed extraction checks (355 files). Regenerate/review these
+identities if code changes; do not silently substitute a later branch tip. These
 commands require files copied into that root-owned directory; never execute the
 installer directly from the shared user's writable home. Current operator sudo
 permits only discovery. The one-time root installation is still a manual action
@@ -108,16 +113,20 @@ port or firewall change is proposed.
 
 ## Validation and review
 
-Local checks: ten Infrastructure protocol/archive/discovery tests passed; Unibase
-ran 47 deployment tests with 27 passing and 20 skipped on Windows (Linux container
-and symlink fixtures). Shell syntax, Actionlint, application documentation and
+Ten Infrastructure protocol/archive/discovery tests passed. Unibase's
+[CI run 40106982074](https://github.com/Uniwares-LTD/unibase/actions/runs/40106982074)
+at `6edc411` passed all 47 deployment tests in an isolated Linux container, including
+first-release cleanup, retained rollback, anonymous-pull rejection and branch guards.
+The local Windows run passed 27 and skipped 20 platform-specific checks; CI closes
+that coverage gap. Shell syntax, local Actionlint, application documentation and
 skill-integrity checks passed. Owner Terraform validation and three mock-provider
 tests passed without a backend or real provider calls. Cross-repository link
 validation passed. Supplied private credential values were absent from changed
 files. A separate read-only review checked the final interfaces and failure paths.
 
-Linux container tests require CI because Docker is unavailable on this workstation;
-their outcome remains pending publication. The i18n check is unavailable locally
-because TypeScript dependencies are not installed; no UI or runtime application
-source changed. None of these local checks proves live readiness. Preserve the
+CI also passed environment, skill/docs, TypeScript, lint, formatting, application
+and account tests, and ShellCheck. It reported advisory warnings for stale client
+translation sections, dependency audit findings and Actionlint unavailable in that
+runner; the separately downloaded/checksummed local Actionlint passed. No UI or
+runtime application source changed. None of these checks proves live readiness. Preserve the
 Phase 2 disposable compatibility, privilege-boundary and service-health checks.
