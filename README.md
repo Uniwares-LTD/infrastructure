@@ -1,9 +1,11 @@
 # Uniwares infrastructure
 
 Shared infrastructure inventory, architecture and operating guidance for Uniwares
-applications. This private repository is initialized with documentation only.
-It has not installed services, created host accounts, transferred ownership or
-changed deployments. The default branch is `main`.
+applications. It includes documentation and a narrowly scoped discovery helper
+with a one-time root installer. The operator installed this helper and its scoped
+sudo rule; agent-side acceptance passed. Operator-created admin access is recorded
+in the inventory. Service bootstrap, ownership transfers and application deployment
+remain pending. The default branch is `main`.
 
 ## Read first
 
@@ -12,6 +14,8 @@ changed deployments. The default branch is `main`.
 - [Staging bootstrap runbook](docs/operations.md): start here for the configuration
   checklist, three phases, verification and failure/resume procedures; existing app
   workers/Redis/Nginx stay in place for the first deployment.
+- [Phase 1 preparation](docs/staging-preparation.md): verified bindings, prepared tooling and concrete Phase 2 scope.
+- [Provider handoff](docs/provider-access.md): protected local credential references.
 - [Implementation plan](docs/implementation-plan.md): pending delivery and acceptance.
 - [Agent guidance](AGENTS.md): evidence and change boundaries.
 

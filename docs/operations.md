@@ -15,7 +15,8 @@ against their interfaces, not evidence of execution on srv1. Steps marked
 
 ## Configuration and progress
 
-Use [the dated inventory](inventory/srv1.md); refresh only facts needed for the
+Use the [Phase 1 preparation package](staging-preparation.md) and
+[protected provider handoff](provider-access.md). Use [the dated inventory](inventory/srv1.md); refresh only facts needed for the
 next decision. Discover available values first and request remaining non-secret
 inputs together. Record secret names and protected-store references, never values.
 
@@ -36,7 +37,7 @@ and non-secret workflow/release identifiers.
 
 | Phase | Status | Reviewed revision | Verification | Next action |
 | --- | --- | --- | --- | --- |
-| 1 Connect and prepare | Pending | Not selected | October 22 inventory only; new access/tooling unverified | Access handoff, targeted discovery and required adaptations |
+| 1 Connect and prepare | In progress | Discovery helper hash recorded in inventory; bootstrap revision not selected | SSH, scoped discovery and provider bindings verified; local tooling validation/review in progress October 24 | Finish review and publication; live installation stays Phase 2 |
 | 2 Bootstrap and deploy | Pending | Not selected | Implementation required | Preview concrete changes after phase 1 |
 | 3 Verify and hand off | Pending | Not selected | Not performed | Verify first healthy staging release |
 
@@ -57,6 +58,26 @@ SSH daemon policy or firewall rules during this handoff.
 Access hostname is not proof that a direct SSH connection or local ProxyCommand
 is configured. On Windows PowerShell, generate a new admin key only if its path
 does not exist. Use a passphrase and protected password-manager recovery storage.
+
+Resolve command values from repository evidence before requesting operator input.
+The owner's [VPS configuration](https://github.com/karpishe-experiments/agentic-poc/blob/master/infra/config/vps.json)
+records host `vps-ae0a9d01.vps.ovh.net` and Access endpoint
+`srv1-deploy.uniwares.co.uk`; the inventory observes SSH listening on port 22.
+These values do not verify external reachability or the new account's login.
+After installing the public key and obtaining the host fingerprint through the
+trusted root session, test direct SSH from Windows PowerShell:
+
+```powershell
+ssh -p 22 -i "$env:USERPROFILE\.ssh\uniwares-ops-admin" -o IdentitiesOnly=yes -o StrictHostKeyChecking=ask uniwares-ops-admin@vps-ae0a9d01.vps.ovh.net
+```
+
+Compare any first-connection fingerprint prompt with the trusted-session fingerprint
+before accepting; stop on a mismatch. If direct SSH is unavailable, preserve the
+working transport rather than opening firewall ports. The owner's deployment script
+uses `ProxyCommand=cloudflared access ssh --hostname %h` with the Access endpoint;
+that path requires an installed client and authorized Access authentication.
+Do not assume those prerequisites from the hostname. Once trust is established,
+use the pinned profile with strict checking described below.
 
 ```powershell
 $opsKeyPath = Join-Path $env:USERPROFILE '.ssh/uniwares-ops-admin'
@@ -112,6 +133,49 @@ Reuse an existing valid key/account; do not reset credentials or relax SSH check
 Read-only discovery may proceed without unattended sudo; privileged setup may not.
 
 ### Complete targeted discovery and required implementation
+
+For additional operators, use the [shared key handoff](#shared-operator-key-handoff)
+instead of creating another account or regenerating the installed key.
+
+#### Scoped privileged discovery
+
+The [discovery helper](../scripts/srv1-discovery.py) and
+[one-time installer](../scripts/install-discovery.sh) were installed and verified
+on October 22; see the [acceptance evidence](inventory/srv1.md#scoped-discovery-installation-and-acceptance--2026-10-22).
+They cover container names/images/status/ports, Docker IPAM, UFW status and cron
+filenames only. They do not disclose container environment, command lines, logs,
+cron contents or credentials. Provider firewall and effective packet filtering
+remain separate checks. This helper cannot bootstrap or deploy an application.
+
+The agent staged both files in `/home/uniwares-ops-admin/` on October 22. The
+operator runs this block in the existing trusted **root VPS session**. Copying the
+installer into a fresh root-only directory before checking it prevents the shared
+account from changing the verified installer while it executes:
+
+```bash
+(
+  set -e
+  work=$(mktemp -d /root/uniwares-install.XXXXXXXX)
+  trap 'rm -rf -- "$work"' EXIT
+  cp /home/uniwares-ops-admin/install-discovery.sh "$work/install.sh"
+  printf '%s  %s\n' 8914e01c19340674ea1fe3f6de35fc8f6d29bae989b97f630ac0aae44163981c "$work/install.sh" | sha256sum --check
+  bash "$work/install.sh"
+)
+```
+
+The installer verifies the helper hash, trusted parent directories and sudoers
+syntax. It installs root-owned `/usr/local/sbin/uniwares-discovery` and one sudoers
+rule for that exact command with no arguments. Existing destinations cause it to
+stop for inspection. On partial failure, inspect both destinations and sudoers;
+do not overwrite an existing installation blindly. To revoke this new grant,
+root removes only `/etc/sudoers.d/uniwares-discovery` and validates with `visudo -c`.
+
+After installation the agent runs `sudo -n /usr/local/sbin/uniwares-discovery`.
+Verify that arguments are denied and `sudo -n true` still fails. The deploy account,
+general sudo, Docker-group membership, services and firewall rules remain unchanged.
+Local tests, VPS non-root refusal/syntax checks, root installation, positive
+privileged execution and argument/unrelated-command denial checks passed. The
+installation block is retained for reference; do not repeat it on the verified host.
 
 **Owner/location:** agent through established read-only VPS/provider access and
 development checkouts. Gather host/VPN routes, effective ingress rules, selected
@@ -228,6 +292,79 @@ Engine upgrades and broad disk cleanup are outside the initial staging path.
 
 ## Credentials and access
 
+### Shared operator key handoff
+
+The stable reference name for this key is **`srv1-ops-admin`**. Use that name in
+handoffs, credential references and the shared vault item title. It identifies the
+existing key, not a new key or SSH profile; no file rename or key rotation is needed.
+
+| Reference | Value |
+| --- | --- |
+| Key name / suggested vault item title | `srv1-ops-admin` |
+| VPS account | `uniwares-ops-admin` |
+| Recipient's Windows private-key path | `$env:USERPROFILE\.ssh\uniwares-ops-admin` |
+| Optional SSH connection profile (separate from the key name) | `uniwares-srv1-admin` |
+
+Trusted operators use the same `uniwares-ops-admin` account and admin key. The
+owner distributes the existing private key through a shared password-manager vault
+or another authenticated encrypted channel, limited to authorized operators.
+Keep an authoritative protected copy and a recipient list in that store. Shared
+keys do not identify individual operators in SSH logs; reliably revoking one
+recipient's access requires rotating the shared key for everyone. No per-project key
+management system is required.
+
+Share the following:
+
+- Private key file `uniwares-ops-admin` (no extension), through the protected channel.
+- Its passphrase, if one was set, as a protected vault field or separate secure message.
+  Do not assume that a disabled VPS account password means the key has no passphrase.
+- Optional public key file `uniwares-ops-admin.pub`; this alone cannot authenticate.
+- Non-secret connection details: host `vps-ae0a9d01.vps.ovh.net`, port `22`, user
+  `uniwares-ops-admin`, and verified ED25519 host fingerprint
+  `SHA256:Jk5pHbF36TXs3PZ+50CuaX074dLjCd4/Gs7uIrU6vyc`.
+
+On the original Windows workstation, locate the existing key without printing its
+contents. Select the private file in Explorer and upload that file directly to the
+protected store; do not paste it into chat, logs, Git or a GitHub issue:
+
+```powershell
+$opsKeyPath = Join-Path $env:USERPROFILE '.ssh\uniwares-ops-admin'
+if (!(Test-Path -LiteralPath $opsKeyPath -PathType Leaf)) {
+    throw 'Existing key not found. Locate it; do not generate a replacement.'
+}
+explorer.exe /select,$opsKeyPath
+```
+
+Each Windows recipient obtains **`srv1-ops-admin`** through the owner's secure
+channel and saves its private key file as
+`$env:USERPROFILE\.ssh\uniwares-ops-admin` in their own protected user profile.
+Create `.ssh` if absent; inspect any existing destination before copying and never
+overwrite another key. Restrict file access to the recipient; if OpenSSH reports
+unsafe permissions, correct the file ACL rather than disabling checks. Keep the
+private key outside repository directories and do not add it to repository secrets
+merely to make it downloadable. GitHub Actions secrets are workflow inputs, not a
+device key-distribution service.
+
+Connect from Windows PowerShell:
+
+```powershell
+ssh -p 22 -i "$env:USERPROFILE\.ssh\uniwares-ops-admin" -o IdentitiesOnly=yes -o StrictHostKeyChecking=ask uniwares-ops-admin@vps-ae0a9d01.vps.ovh.net
+```
+
+On first connection, compare the ED25519 fingerprint with the verified value above
+before accepting. Stop on a mismatch or changed-host warning; never delete pins to
+bypass it. Subsequent automation uses `StrictHostKeyChecking=yes`. Once logged in,
+run `whoami`, `hostname` and `sudo -n true`. Expected identities are the account and
+host above. A sudo password-required result remains expected until reviewed scoped
+privileged operations exist; sharing this key does not enable unattended sudo.
+Report only results and the local key/profile reference, never the private key or
+passphrase. Each device's successful connection must be verified separately.
+
+This admin key is separate from the future restricted deployment key below. Do not
+put it into routine application deployment workflows.
+
+### Workflow credentials
+
 GitHub Free does not expose organization secrets to private repositories, and
 private-repository environment secrets require a paid plan. Use repository secrets:
 one deployment key stored authoritatively in a password manager, copied as
@@ -279,11 +416,11 @@ its consumers and preserving operator access.
 
 ## Image retention
 
-The inventory reports 69.34 GB of reclaimable images. First identify each app's
+The October 24 inventory reports 84.23 GB of reclaimable images. First identify each app's
 active and retained rollback digests and whether they can be pulled again. Remove
 only explicitly selected obsolete images; record a small retention policy when
-implemented. Do not blanket-prune images/volumes across all projects. The current
-57 GiB free disk does not require emergency deletion to begin staging work.
+implemented. Do not blanket-prune images/volumes across all projects. The last observed
+41 GiB free disk does not require emergency deletion to begin staging work.
 
 ## Minimum staging backup and recovery
 

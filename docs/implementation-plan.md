@@ -5,6 +5,22 @@ configuration/progress table. This plan separates first deployment from later
 consolidation. Documentation is complete; live setup and application deployment
 remain unverified. [Inventory](inventory/srv1.md) records the dated baseline.
 
+Access progress, 2026-10-22: operator key login and the trusted-root host fingerprint
+are verified. Shared-key distribution uses the [operator handoff](operations.md#shared-operator-key-handoff).
+Agent-side strict-host-key SSH and non-privileged discovery are also verified.
+Reviewed privileged setup operations remain pending; this is not bootstrap or deployment
+acceptance. See the inventory for current routes, listeners and access limitations.
+
+Scoped discovery tooling is installed: fixed no-argument helper and hash-verified
+root installer. Local boundary tests, VPS syntax/non-root refusal checks, operator
+installation and agent-side scoped-sudo positive/negative checks pass. The inventory
+records the observed Docker state and remaining discovery limits. This does not implement
+the later deployment dispatcher or grant setup privileges.
+
+The [October 24 preparation package](staging-preparation.md) records provider read
+results, the proposed non-overlapping subnet, prepared dispatcher and concrete live
+change scope. Local preparation does not install accounts or change services.
+
 ## First deployment
 
 1. **Connect and prepare.** Establish protected admin access, complete only required

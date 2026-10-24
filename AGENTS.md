@@ -12,6 +12,19 @@
   later milestones, not implicit first-release prerequisites.
 - Label observed state, accepted preferences, recommendations and unresolved checks.
   A package candidate, passing local check or published document is not live acceptance.
+- Generate operator instructions from repository configuration, canonical inventory,
+  owner-repository contracts and verified session evidence first. Use known non-secret
+  hosts, users and paths in complete commands for the stated shell/location, citing
+  their source. Ask for missing consequential inputs together, not values already
+  recorded. Distinguish configuration from live verification; never guess credentials,
+  host fingerprints, transport authorization or network allocations.
+- For new operator devices, follow the shared-key handoff in operations.md. Reuse
+  the installed admin key named `srv1-ops-admin` through the owner's secure channel.
+  Windows recipients save it as `$env:USERPROFILE\.ssh\uniwares-ops-admin` and use
+  the runbook's complete connection command; the key name is not an SSH profile.
+  Never request private
+  key contents in chat or Git. Verify the documented host fingerprint on each device.
+  Shared admin login does not establish unattended sudo or routine deploy authority.
 - Preserve existing services and their owners. Tunnel/Dify/Booklet ownership remains
   with agentic-poc until a separately reviewed transfer. Do not apply competing
   Terraform configurations or replace a complete tunnel route list from an app repo.
