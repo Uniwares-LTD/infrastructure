@@ -3,23 +3,26 @@
 Use the [three-phase runbook](operations.md) for execution and its single
 configuration/progress table. This plan separates first deployment from later
 consolidation. Phase 1 preparation is complete. October 25 operator output confirms
-plugin upgrades and restricted deployment account/control installation; runtime
-preparation and application deployment remain incomplete. Resume at the failed
-preparation checkpoint using Unibase's reviewed null-IPAM preflight repair;
-do not repeat the package/account bootstrap. The [operations status table](operations.md#configuration-and-progress)
+plugin upgrades, restricted deployment account/control installation, the reviewed
+null-IPAM preflight repair, private runtime preparation and additive index setup.
+The first staging release and independent restricted check passed; final discovery
+found Booklet staging/production, Dify and legacy services at their expected baseline.
+Phase 2 is verified; Phase 3 user sign-in and handoff remain pending.
+Do not repeat completed bootstrap operations. The [operations status table](operations.md#configuration-and-progress)
 records current evidence. [Inventory](inventory/srv1.md) records the dated baseline.
 
 Access progress, 2026-10-22: operator key login and the trusted-root host fingerprint
 are verified. Shared-key distribution uses the [operator handoff](operations.md#shared-operator-key-handoff).
 Agent-side strict-host-key SSH and non-privileged discovery are also verified.
-Reviewed privileged setup operations remain pending; this is not bootstrap or deployment
-acceptance. See the inventory for current routes, listeners and access limitations.
+That initial access checkpoint did not establish bootstrap or deployment acceptance;
+the current verified status above supersedes its pending setup. See the inventory
+for routes, listeners and access limitations.
 
 Scoped discovery tooling is installed: fixed no-argument helper and hash-verified
 root installer. Local boundary tests, VPS syntax/non-root refusal checks, operator
 installation and agent-side scoped-sudo positive/negative checks pass. The inventory
-records the observed Docker state and remaining discovery limits. This does not implement
-the later deployment dispatcher or grant setup privileges.
+records the observed Docker state and remaining discovery limits. The discovery helper
+grants no setup privileges; routine releases use the separately installed dispatcher.
 
 The [October 24 preparation package](staging-preparation.md) records provider read
 results, the proposed non-overlapping subnet, prepared dispatcher and concrete live
@@ -42,7 +45,7 @@ change scope. Local preparation does not install accounts or change services.
    preserve data/configuration. No imaginary prior-release or DB rollback.
 
 [Unibase's plan](https://github.com/Uniwares-LTD/unibase/blob/main/docs/implementation-plan.md)
-owns application changes. These phases remain pending live acceptance. Authorization
+owns application changes. Phase 3 and later recovery retain separate acceptance. Authorization
 covers a concrete reviewed scope; unexpected destructive changes require reassessment.
 
 ## First-release acceptance
@@ -82,8 +85,9 @@ covers a concrete reviewed scope; unexpected destructive changes require reasses
 
 First-deployment preparation has selected the dispatcher, existing provider bindings,
 hostname, private listener and candidate subnet/Compose versions; see the preparation
-package. Remaining execution checks belong to Phase 2: one-time root installation,
-Compose/Buildx runtime compatibility, provider writes and live route/privilege checks.
+package. Root installation, Compose/Buildx compatibility, provider writes and the
+owner route are verified. Application release/acceptance evidence belongs to the
+operations progress table; do not infer live health from successful preparation.
 
 For later work: shared network/gateway design, shared Redis location/database allocation,
 job endpoint/timer interfaces, off-host destination/retention/encryption recovery and

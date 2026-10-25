@@ -4,6 +4,31 @@ Observed **2026-10-22**, from two operator-supplied read-only command outputs.
 This is a sanitized snapshot, not an ongoing health guarantee. No SSH credential
 was supplied and no host change was performed during this discovery.
 
+## Current staging bootstrap — 2026-10-25
+
+Operator output confirms Compose 5.6.1 and Buildx 0.38.1 installation, with Docker
+Engine retained. The candidate parsed the active projects with their retained
+interpolation inputs and passed a disposable create/start/health/remove check.
+The shared restricted `uniwares-deploy-user` account and root-owned control bundle
+are installed. A checksum-bound, single-file null-IPAM preflight repair selected
+bundle `15bc84b1691eb42fd6053c36a4363aa0c18b5ba51e210521e41e9209d7ea18f2`.
+Runtime preview/apply and additive indexes completed (`PHASE2_PREPARATION_OK`).
+Before first release, agent-side restricted check reached `No current release`,
+replacing the earlier missing-setup result. Subsequent release/check workflows
+verified Unibase app and both workers healthy, with private Redis and Nginx bound
+only to `127.0.0.1:35101`. The application network is `172.30.241.0/24`.
+The [operations record](../operations.md#current-unibase-release--2026-10-25)
+owns source/image/configuration identities and workflow evidence.
+
+Scoped discovery immediately before release found Booklet staging/production
+healthy, Dify's previously health-checked services healthy and legacy services
+running as before. Xray remains in its pre-existing restart loop; no Xray repair,
+Engine upgrade, legacy migration or broad cleanup is included. Historical tables
+below retain their October 22 provenance; use the operations progress table for
+subsequent application release evidence. During release, Booklet's separate owner
+deployment temporarily stopped staging; the final scoped check found it healthy
+again. Booklet production, Dify and legacy service statuses were retained.
+
 ## Host and capacity
 
 | Item | Observation |

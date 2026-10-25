@@ -37,9 +37,42 @@ and non-secret workflow/release identifiers.
 
 | Phase | Status | Reviewed revision | Verification | Next action |
 | --- | --- | --- | --- | --- |
-| 1 Connect and prepare | Verified (preparation only) | Infrastructure `bb041e4`, Unibase `6edc411`, owner `c182b64` | October 24: provider reads, inventory, 47 Linux deployment tests, 10 Infrastructure tests and 3 Terraform mock tests; separate read-only review | Review the concrete Phase 2 scope; no further Phase 1 operator input |
-| 2 Bootstrap and deploy | In progress | Merged Infrastructure `90ed66a`, Unibase `bcc3cde`, owner `50536f0`; preflight repair `edcc21d` in Unibase PR #2 | October 25 operator output: Compose 5.6.1/Buildx installed, Engine retained, baseline and disposable Compose check passed, restricted account/control installed. Provider bindings, OAuth, secrets and owner apply `40109137086` verified. Runtime preview stopped on null Docker IPAM; no first release | Use the targeted checksum-bound control update and resume preparation/indexes; do not repeat plugins/accounts. Agent then verifies restricted access and runs staging release |
-| 3 Verify and hand off | Pending | Not selected | Not performed | Verify first healthy staging release |
+| 1 Connect and prepare | Verified (preparation only) | Infrastructure `bb041e4`, Unibase `6edc411`, owner `c182b64` | October 24: provider reads, inventory, 47 Linux deployment tests, 10 Infrastructure tests and 3 Terraform mock tests; separate read-only review | Complete; subsequent live acceptance is recorded in Phase 2 |
+| 2 Bootstrap and deploy | Verified | Runtime `edcc21d`; Infrastructure installer `90ed66a`; owner route `50536f0` | October 25: plugins/account/control and runtime/index preparation complete; Release `40168299056` attempt 3 and independent Check `40168997418` passed, including anonymous pull, local/public readiness and both workers. Booklet staging returned healthy after its separate owner operation; production/Dify/legacy baseline retained | Proceed to Phase 3 user acceptance; do not repeat bootstrap or deployment |
+| 3 Verify and hand off | Pending user acceptance | Runtime `edcc21d` | Account page loads with email/Google controls enabled; no user sign-in or recovery rehearsal claimed | Verify real login and complete operator handoff; track recovery/consolidation separately |
+
+### Current Unibase release — 2026-10-25
+
+- Staging: <https://unibase-staging.uniwares.co.uk/account>, branch `_staging`.
+- Source: `edcc21de9a501b21f63e353da9a75cdf5efb5e65`.
+- Image: `ghcr.io/uniwares-ltd/unibase@sha256:2e4e1ffac7ba401b924c657fe1b9d155cf926dd75d35a47aca0c2ca6fcd7ac1b`.
+- Installed control bundle: `15bc84b1691eb42fd6053c36a4363aa0c18b5ba51e210521e41e9209d7ea18f2`.
+- Tracked staging configuration SHA-256: `5b1eb3cbc4658f1a0de990484b0744fed313a6473585cc107a284d4aa6478582`.
+  Private runtime snapshots remain under `/opt/unibase/staging/releases/`; the
+  `current` symlink selects the serving configuration. Never copy their contents to Git.
+- [Release attempt 3](https://github.com/Uniwares-LTD/unibase/actions/runs/40168299056/attempts/3)
+  and [independent check](https://github.com/Uniwares-LTD/unibase/actions/runs/40168997418)
+  passed. Earlier attempts stopped before host activation; no failed candidate needed restoration.
+
+Routine operations use Unibase's own workflows on `_staging`:
+
+```powershell
+gh workflow run check-deployment.yml --repo Uniwares-LTD/unibase --ref _staging -f environment=staging
+```
+
+A reviewed push to `_staging` triggers Release automatically. Do not also dispatch
+the same commit. Use Rollback only when a real compatible healthy predecessor is
+retained; this first release has none. Secret references are repository Actions
+secrets `DEPLOY_SSH_PRIVATE_KEY`, `DEPLOY_SSH_HOST_KEY`, `CLOUDFLARE_READ_TOKEN` and
+the protected provider handoff, not values in this document.
+
+Post-deploy discovery found Unibase app and both workers healthy, app Redis private,
+and only Nginx published at `127.0.0.1:35101`. Booklet production, Dify and legacy
+services retained their prior statuses. Booklet staging was temporarily stopped by concurrent
+owner deployment [40168742098](https://github.com/karpishe-experiments/agentic-poc/actions/runs/40168742098),
+with its own operation container. Its client wait expired without stopping that
+host operation. A later scoped discovery confirmed Booklet staging healthy again.
+No Booklet stop, replay or restoration was performed through Unibase.
 
 The goal is one access handoff, one consolidated input request and one authorization
 for concrete live changes. Provider consent/authentication may still need operator
@@ -213,8 +246,9 @@ missing access. Return only unresolved, consequential inputs to the operator.
 
 **Owner/location:** agent through the reviewed administrative entrypoint, provider
 interfaces, tunnel owner's process and then Unibase GitHub Actions. Use the reviewed
-Phase 1 tooling and concrete scope in [staging preparation](staging-preparation.md);
-installation, provider writes and live acceptance remain pending authorization.
+Phase 1 tooling and concrete scope in [staging preparation](staging-preparation.md).
+The status table records completed operations; further live changes require an
+authorized scope and current state checks.
 
 **Action:** preview host/provider state and apply missing compatible setup. Establish
 the shared restricted deploy account/key, select and verify the Compose upgrade,
@@ -235,6 +269,14 @@ An anonymous-pull failure stops before candidate activation. A release-branch pu
 already triggers deployment; do not also dispatch it manually. Record the workflow,
 source SHA, image digest and retained configuration identity. See
 [Unibase's application procedures](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md).
+
+First GHCR publication can create a private package even when public deployment is
+the intended convention. Check the owner's organization package-publishing policy
+and the individual package visibility. Enabling public package creation permits
+members to publish public packages; it does not automatically publish existing
+packages or repositories. Uniwares-LTD's policy and Unibase's package were explicitly
+approved and set public on October 25. Retry the same failed release only after
+the package is public; anonymous digest verification still runs before host access.
 
 **Expected result:** allowed deploy operations work and arbitrary shell/root/Docker
 operations are denied; new app ports/Redis stay private; one healthy candidate runs
