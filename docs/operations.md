@@ -1,5 +1,13 @@
 # Staging bootstrap and operations runbook
 
+For new deployments, start with the [named credential inventory and copyable checklist](provider-access.md)
+and the application's [initialization procedure](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md).
+Public app settings use tracked environment JSON, not Actions variables. Each PR
+prepared for publication must state `Operator intervention: none` or identify actions,
+owner, execution location, ordering, verification and failure/resume. Image releases
+cannot update root-owned tooling or provider bindings. Runtime-secret restoration
+and a unified initialization command remain implementation work, not installed operations.
+
 Use three phases to reach a working Unibase staging deployment. Keep the existing
 application workers, application Redis and private Nginx for the first release.
 Shared gateway/Redis and app-hosted job endpoints remain the target, but are later
@@ -39,7 +47,7 @@ and non-secret workflow/release identifiers.
 | --- | --- | --- | --- | --- |
 | 1 Connect and prepare | Verified (preparation only) | Infrastructure `bb041e4`, Unibase `6edc411`, owner `c182b64` | October 24: provider reads, inventory, 47 Linux deployment tests, 10 Infrastructure tests and 3 Terraform mock tests; separate read-only review | Complete; subsequent live acceptance is recorded in Phase 2 |
 | 2 Bootstrap and deploy | Verified | Runtime `edcc21d`; Infrastructure installer `90ed66a`; owner route `50536f0` | October 25: plugins/account/control and runtime/index preparation complete; Release `40168299056` attempt 3 and independent Check `40168997418` passed, including anonymous pull, local/public readiness and both workers. Booklet staging returned healthy after its separate owner operation; production/Dify/legacy baseline retained | Complete; use Phase 3 routine instructions and do not repeat bootstrap |
-| 3 Verify and hand off | Verified | Corrective runtime `215044b`; handoff guidance in the draft PRs | October 25: account/admin/session/profile/logout checks, operator-reported incognito login/logout and workstation Actions/pinned SSH access verified. Corrective Release `40176352821` and independent Check `40176659441` passed; fresh account/admin loads have no injected decoder or new console errors | Routine staging uses the quick start below. Next: minimum off-host recovery workflow/rehearsal; keep consolidation and production separate |
+| 3 Verify and hand off | Verified | Corrective runtime `215044b`; handoff guidance in this runbook and the application deployment guide | October 25: account/admin/session/profile/logout checks, operator-reported incognito login/logout and workstation Actions/pinned SSH access verified. Corrective Release `40176352821` and independent Check `40176659441` passed; fresh account/admin loads have no injected decoder or new console errors | Routine staging uses the quick start below. Next: minimum off-host recovery workflow/rehearsal; keep consolidation and production separate |
 
 ### Current Unibase release — 2026-10-25
 

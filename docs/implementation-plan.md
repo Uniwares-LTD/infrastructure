@@ -58,6 +58,12 @@ covers a concrete reviewed scope; unexpected destructive changes require reasses
 
 ## Later consolidation and recovery
 
+- [ ] Automate derived setup and restricted runtime-secret restoration using the
+  [credential inventory](provider-access.md). Require destination identity validation,
+  bounded root-owned installation, secret-safe preview/output, atomic missing-file
+  restoration, conflict refusal and interruption/resume checks. Define proposed
+  Actions secret names with implementation; current runtime files are host-installed.
+
 - [ ] Introduce the shared gateway with equivalent Firebase helper, streaming and
   trusted-proxy handling; remove per-app ingress/subnet requirements afterward.
 - [ ] Introduce shared application Redis with allocated logical databases; keep Dify's

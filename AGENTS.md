@@ -1,5 +1,19 @@
 # Infrastructure guidance
 
+- For new deployment handoff, prompt the user to retrieve files from the secure
+  **Credentials** channel and supply a protected local directory reference. Follow
+  [the exact filename/reuse map](docs/provider-access.md); validate structure without
+  displaying values, collect missing access references together, and keep public
+  host/provider configuration in docs or app JSON rather than secret handoff files.
+
+- Every publication PR states `Operator intervention: none` or lists actions, owner,
+  execution location, ordering, verification and failure/resume. Distinguish image
+  releases from host/control/provider changes.
+- Use [the named credential inventory](docs/provider-access.md) for new deployments.
+  Collect missing protected references together, read only necessary exports and
+  never print values. Public app settings use tracked JSON, not Actions variables.
+  Preserve existing names; distinguish installed behavior from proposed automation.
+
 - Read [the inventory](docs/inventory/srv1.md), [architecture](docs/architecture.md),
   [operations](docs/operations.md) and [implementation plan](docs/implementation-plan.md)
   before infrastructure work. Revalidate time-sensitive observations before applying changes.

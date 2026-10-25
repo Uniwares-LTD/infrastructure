@@ -16,7 +16,7 @@ recovery rehearsals and ownership transfers remain later work. The default branc
   checklist, three phases, verification and failure/resume procedures; existing app
   workers/Redis/Nginx stay in place for the first deployment.
 - [Phase 1 preparation](docs/staging-preparation.md): verified bindings, prepared tooling and concrete Phase 2 scope.
-- [Provider handoff](docs/provider-access.md): protected local credential references.
+- [Credential inventory and provider handoff](docs/provider-access.md): stable vault/file names, acquisition, permissions and the new-deployment checklist.
 - [Implementation plan](docs/implementation-plan.md): pending delivery and acceptance.
 - [Agent guidance](AGENTS.md): evidence and change boundaries.
 
