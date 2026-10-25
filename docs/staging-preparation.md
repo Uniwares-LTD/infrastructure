@@ -119,6 +119,16 @@ port or firewall change is proposed.
 
 ## Validation and review
 
+October 25 operator attempt: the original root batch stopped during Booklet
+production parsing, before package upgrades or account installation. It selected
+neither the release's `runtime.env` nor the owner's complete interpolation inputs.
+The corrected batch honors recorded environment-file labels, Booklet's saved
+runtime file and Dify's documented external runtime file, without process/container
+values masking those files. Three regression checks passed, and the pinned Compose
+candidate parsed the actual Booklet production templates with synthetic saved
+bindings and the expected retained image/port. Full host parsing and bootstrap
+remain pending the corrected root run; this is not live compatibility acceptance.
+
 Ten Infrastructure protocol/archive/discovery tests passed. Unibase's
 [CI run 40106982074](https://github.com/Uniwares-LTD/unibase/actions/runs/40106982074)
 at `6edc411` passed all 47 deployment tests in an isolated Linux container, including

@@ -248,6 +248,16 @@ release fails, stop only its unhealthy candidate, including its workers, and any
 candidate timers if present; retain configuration/data and fix/redeploy. There is
 no previous release to roll back to. Do not restore the DB or restart shared services.
 
+For compatibility parsing, use each owner's actual Compose interpolation inputs.
+Booklet uses the retained release's `runtime.env`; Dify uses
+`/etc/kids-booklet/dify/runtime.env`. Honor recorded Compose environment-file labels
+when present. Container runtime variables do not reproduce all interpolation values
+(for example, the deployment image or published port), and process variables override
+`--env-file`. A failed parser invocation without the saved bindings is not evidence
+that the candidate Compose version is incompatible. Preserve private diagnostics
+under the root-only batch directory; report variable names and checkpoint results,
+not rendered configuration or credential-bearing error bodies.
+
 ## 3. Verify and hand off
 
 **Owner/location:** agent through application check workflows and public/private
