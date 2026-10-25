@@ -2,24 +2,24 @@
 
 Use the [three-phase runbook](operations.md) for execution and its single
 configuration/progress table. This plan separates first deployment from later
-consolidation. Phase 1 preparation is complete; live setup and application deployment
-remain unverified. [Inventory](inventory/srv1.md) records the dated baseline.
+consolidation. Phase 1 preparation is complete. October 25 operator output confirms
+plugin upgrades, restricted deployment account/control installation, the reviewed
+null-IPAM preflight repair, private runtime preparation and additive index setup.
+The first staging release and independent restricted check passed; final discovery
+found Booklet staging/production, Dify and legacy services at their expected baseline.
+Phase 3 staging acceptance and handoff are now verified: Google admin/session/profile
+and logout/re-login checks, operator-reported incognito email login/logout, workstation
+Actions/pinned SSH access and fresh runtime checks passed. The Cloudflare HTML
+rewriting/CSP hydration defect was corrected by Unibase's no-transform response,
+deployed and verified on fresh account/admin loads. Current release identity and
+evidence belong in operations; app details belong in its acceptance record.
+Do not repeat completed bootstrap operations. The [operations status table](operations.md#configuration-and-progress)
+records current evidence. [Inventory](inventory/srv1.md) records the dated baseline.
 
-Access progress, 2026-10-22: operator key login and the trusted-root host fingerprint
-are verified. Shared-key distribution uses the [operator handoff](operations.md#shared-operator-key-handoff).
-Agent-side strict-host-key SSH and non-privileged discovery are also verified.
-Reviewed privileged setup operations remain pending; this is not bootstrap or deployment
-acceptance. See the inventory for current routes, listeners and access limitations.
-
-Scoped discovery tooling is installed: fixed no-argument helper and hash-verified
-root installer. Local boundary tests, VPS syntax/non-root refusal checks, operator
-installation and agent-side scoped-sudo positive/negative checks pass. The inventory
-records the observed Docker state and remaining discovery limits. This does not implement
-the later deployment dispatcher or grant setup privileges.
-
-The [October 24 preparation package](staging-preparation.md) records provider read
-results, the proposed non-overlapping subnet, prepared dispatcher and concrete live
-change scope. Local preparation does not install accounts or change services.
+Completed bootstrap procedures are [historical references](history/completed-bootstrap-2026-10-25.md),
+not a pending checklist. The [preparation package](staging-preparation.md) preserves
+the reviewed Phase 1 scope; live status belongs in operations. Application acceptance
+belongs in Unibase's deployment guide. Avoid duplicating release IDs and test logs here.
 
 ## First deployment
 
@@ -32,13 +32,13 @@ change scope. Local preparation does not install accounts or change services.
    Adapt route verification without building a generic registration platform.
    One release workflow builds, publishes, verifies anonymous digest pull, deploys
    and checks health. Keep existing workers and app Redis.
-3. **Verify and hand off.** Check login, readiness, existing workers and unchanged host
-   services. Record release identity, routine workflow instructions and deferred work.
+3. **Verify and hand off.** Complete app login/session acceptance, readiness and current worker checks.
+   Reuse the completed shared-host baseline unless new changes affect it. Record release identity, routine workflow instructions and deferred work.
    A failed first release stops only its candidate/workers and any candidate timers;
    preserve data/configuration. No imaginary prior-release or DB rollback.
 
 [Unibase's plan](https://github.com/Uniwares-LTD/unibase/blob/main/docs/implementation-plan.md)
-owns application changes. These phases remain pending live acceptance. Authorization
+owns application changes. Phase 3 and later recovery retain separate acceptance. Authorization
 covers a concrete reviewed scope; unexpected destructive changes require reassessment.
 
 ## First-release acceptance
@@ -57,6 +57,12 @@ covers a concrete reviewed scope; unexpected destructive changes require reasses
   or rollback rehearsal that has not occurred.
 
 ## Later consolidation and recovery
+
+- [ ] Automate derived setup and restricted runtime-secret restoration using the
+  [credential inventory](provider-access.md). Require destination identity validation,
+  bounded root-owned installation, secret-safe preview/output, atomic missing-file
+  restoration, conflict refusal and interruption/resume checks. Define proposed
+  Actions secret names with implementation; current runtime files are host-installed.
 
 - [ ] Introduce the shared gateway with equivalent Firebase helper, streaming and
   trusted-proxy handling; remove per-app ingress/subnet requirements afterward.
@@ -78,8 +84,9 @@ covers a concrete reviewed scope; unexpected destructive changes require reasses
 
 First-deployment preparation has selected the dispatcher, existing provider bindings,
 hostname, private listener and candidate subnet/Compose versions; see the preparation
-package. Remaining execution checks belong to Phase 2: one-time root installation,
-Compose/Buildx runtime compatibility, provider writes and live route/privilege checks.
+package. Root installation, Compose/Buildx compatibility, provider writes and the
+owner route are verified. Application release/acceptance evidence belongs to the
+operations progress table; do not infer live health from successful preparation.
 
 For later work: shared network/gateway design, shared Redis location/database allocation,
 job endpoint/timer interfaces, off-host destination/retention/encryption recovery and

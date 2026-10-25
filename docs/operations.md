@@ -1,5 +1,13 @@
 # Staging bootstrap and operations runbook
 
+For new deployments, start with the [named credential inventory and copyable checklist](provider-access.md)
+and the application's [initialization procedure](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md).
+Public app settings use tracked environment JSON, not Actions variables. Each PR
+prepared for publication must state `Operator intervention: none` or identify actions,
+owner, execution location, ordering, verification and failure/resume. Image releases
+cannot update root-owned tooling or provider bindings. Runtime-secret restoration
+and a unified initialization command remain implementation work, not installed operations.
+
 Use three phases to reach a working Unibase staging deployment. Keep the existing
 application workers, application Redis and private Nginx for the first release.
 Shared gateway/Redis and app-hosted job endpoints remain the target, but are later
@@ -37,9 +45,46 @@ and non-secret workflow/release identifiers.
 
 | Phase | Status | Reviewed revision | Verification | Next action |
 | --- | --- | --- | --- | --- |
-| 1 Connect and prepare | Verified (preparation only) | Infrastructure `bb041e4`, Unibase `6edc411`, owner `c182b64` | October 24: provider reads, inventory, 47 Linux deployment tests, 10 Infrastructure tests and 3 Terraform mock tests; separate read-only review | Review the concrete Phase 2 scope; no further Phase 1 operator input |
-| 2 Bootstrap and deploy | Pending | Prepared revisions above; recheck before apply | Installation and live acceptance not performed | Authorize the concrete scope, coordinate Booklet operations and perform the one-time root bootstrap |
-| 3 Verify and hand off | Pending | Not selected | Not performed | Verify first healthy staging release |
+| 1 Connect and prepare | Verified (preparation only) | Infrastructure `bb041e4`, Unibase `6edc411`, owner `c182b64` | October 24: provider reads, inventory, 47 Linux deployment tests, 10 Infrastructure tests and 3 Terraform mock tests; separate read-only review | Complete; subsequent live acceptance is recorded in Phase 2 |
+| 2 Bootstrap and deploy | Verified | Runtime `edcc21d`; Infrastructure installer `90ed66a`; owner route `50536f0` | October 25: plugins/account/control and runtime/index preparation complete; Release `40168299056` attempt 3 and independent Check `40168997418` passed, including anonymous pull, local/public readiness and both workers. Booklet staging returned healthy after its separate owner operation; production/Dify/legacy baseline retained | Complete; use Phase 3 routine instructions and do not repeat bootstrap |
+| 3 Verify and hand off | Verified | Corrective runtime `215044b`; handoff guidance in this runbook and the application deployment guide | October 25: account/admin/session/profile/logout checks, operator-reported incognito login/logout and workstation Actions/pinned SSH access verified. Corrective Release `40176352821` and independent Check `40176659441` passed; fresh account/admin loads have no injected decoder or new console errors | Routine staging uses the quick start below. Next: minimum off-host recovery workflow/rehearsal; keep consolidation and production separate |
+
+### Current Unibase release — 2026-10-25
+
+- Staging: <https://unibase-staging.uniwares.co.uk/account>, branch `_staging`.
+- Source: `215044b89537feb3dcfe5acc290f5634efb09892`.
+- Image: `ghcr.io/uniwares-ltd/unibase@sha256:adee7653a0901b7340b300843066f5f7542e86dfa0bc0f569b7bc3dc357848d1`.
+- Installed control bundle: `15bc84b1691eb42fd6053c36a4363aa0c18b5ba51e210521e41e9209d7ea18f2`.
+- Tracked staging configuration SHA-256: `5b1eb3cbc4658f1a0de990484b0744fed313a6473585cc107a284d4aa6478582`.
+  Private runtime snapshots remain under `/opt/unibase/staging/releases/`; the
+  `current` symlink selects the serving configuration. Never copy their contents to Git.
+- [Corrective release](https://github.com/Uniwares-LTD/unibase/actions/runs/40176352821)
+  and [independent check](https://github.com/Uniwares-LTD/unibase/actions/runs/40176659441)
+  passed. It fixes Cloudflare HTML rewriting using the app's no-transform response;
+  no host control, runtime credential, tunnel or provider configuration changed.
+- The first working source `edcc21d` and its public digest
+  `sha256:2e4e1ffac7ba401b924c657fe1b9d155cf926dd75d35a47aca0c2ca6fcd7ac1b`
+  are the preceding release identity. The successful deploy path retains the prior
+  snapshot through `previous`; inspect retained state/compatibility before rollback.
+  No rollback rehearsal was performed, and reverting the correction reintroduces
+  the known email-obfuscation issue. No database migration occurred.
+
+Routine operations use Unibase's own workflows on `_staging`:
+
+```powershell
+gh workflow run check-deployment.yml --repo Uniwares-LTD/unibase --ref _staging -f environment=staging
+```
+
+A reviewed push to `_staging` triggers Release automatically. Do not also dispatch
+the same commit. Use Rollback only when a real compatible healthy predecessor is
+retained; the preceding source is recorded above, without claiming a rollback rehearsal.
+Secret references are repository Actions
+secrets `DEPLOY_SSH_PRIVATE_KEY`, `DEPLOY_SSH_HOST_KEY`, `CLOUDFLARE_READ_TOKEN` and
+the protected provider handoff, not values in this document.
+
+Post-deploy shared-host baseline verification is complete; its dated evidence is
+in the [inventory](inventory/srv1.md). Reuse it unless a new shared-host change
+could affect existing services. Routine Unibase acceptance checks its own app.
 
 The goal is one access handoff, one consolidated input request and one authorization
 for concrete live changes. Provider consent/authentication may still need operator
@@ -47,229 +92,86 @@ input. Honor existing scope authorization; stop for unexpected destructive chang
 
 ## 1. Connect and prepare
 
+Completed for srv1. See the [reviewed bootstrap procedure](history/completed-bootstrap-2026-10-25.md#1-connect-and-prepare). Do not rerun completed setup.
+
 ### Establish access
 
-**Owner/location:** operator on the local workstation and existing trusted root VPS
-session; agent prepares instructions. Keep that root session open until a second
-connection and administrative privilege check succeed. Do not change root login,
-SSH daemon policy or firewall rules during this handoff.
-
-**Prerequisites/action:** confirm the existing working SSH transport; the published
-Access hostname is not proof that a direct SSH connection or local ProxyCommand
-is configured. On Windows PowerShell, generate a new admin key only if its path
-does not exist. Use a passphrase and protected password-manager recovery storage.
-
-Resolve command values from repository evidence before requesting operator input.
-The owner's [VPS configuration](https://github.com/karpishe-experiments/agentic-poc/blob/master/infra/config/vps.json)
-records host `vps-ae0a9d01.vps.ovh.net` and Access endpoint
-`srv1-deploy.uniwares.co.uk`; the inventory observes SSH listening on port 22.
-These values do not verify external reachability or the new account's login.
-After installing the public key and obtaining the host fingerprint through the
-trusted root session, test direct SSH from Windows PowerShell:
-
-```powershell
-ssh -p 22 -i "$env:USERPROFILE\.ssh\uniwares-ops-admin" -o IdentitiesOnly=yes -o StrictHostKeyChecking=ask uniwares-ops-admin@vps-ae0a9d01.vps.ovh.net
-```
-
-Compare any first-connection fingerprint prompt with the trusted-session fingerprint
-before accepting; stop on a mismatch. If direct SSH is unavailable, preserve the
-working transport rather than opening firewall ports. The owner's deployment script
-uses `ProxyCommand=cloudflared access ssh --hostname %h` with the Access endpoint;
-that path requires an installed client and authorized Access authentication.
-Do not assume those prerequisites from the hostname. Once trust is established,
-use the pinned profile with strict checking described below.
-
-```powershell
-$opsKeyPath = Join-Path $env:USERPROFILE '.ssh/uniwares-ops-admin'
-if ((Test-Path -LiteralPath $opsKeyPath) -or (Test-Path -LiteralPath "$opsKeyPath.pub")) {
-    throw 'Key path already exists; inspect and reuse it instead of overwriting.'
-}
-New-Item -ItemType Directory -Force -Path (Split-Path $opsKeyPath) | Out-Null
-ssh-keygen -t ed25519 -a 64 -f $opsKeyPath -C 'uniwares-ops-admin'
-if ($LASTEXITCODE -ne 0) { throw 'Key generation failed.' }
-ssh-keygen -lf "$opsKeyPath.pub"
-```
-
-Transfer only the `.pub` contents to the trusted root session. First inspect
-`getent passwd uniwares-ops-admin` and `id uniwares-ops-admin`. If absent, the
-operator creates it with `adduser uniwares-ops-admin` (interactive password kept
-private), then `usermod -aG sudo uniwares-ops-admin`. If already present, inspect
-its home, groups and existing access instead of recreating or resetting it.
-
-For a newly created account with the default `/home/uniwares-ops-admin` home,
-create `.ssh` owned by that account with mode 700. Append the exact public key as
-one line to `.ssh/authorized_keys`, preserving existing keys; set the file owner
-to that account and mode 600. Use the existing root session's editor. On resume,
-check existing public-key fingerprints before appending; do not duplicate the key.
-Confirm the home path through `getent` before touching any existing account's files.
-
-Read the server fingerprint through the trusted root session:
-
-```bash
-ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
-```
-
-Use the corresponding public host key to establish the local known-hosts entry for
-the actual hostname/port. Compare through the trusted session before trusting a new
-key; a network scan alone is insufficient. Never disable host-key checking.
-Create a local SSH profile named `uniwares-srv1-admin` using the confirmed transport,
-`User uniwares-ops-admin`, the protected key, `IdentitiesOnly yes` and
-`StrictHostKeyChecking yes`. Preserve any required Access transport configuration.
-Keep access-token values outside the profile and repository. Unlock the private key
-locally; give the agent the profile/key reference, not its contents or passphrase.
-
-**Expected result:** a second connection via `ssh uniwares-srv1-admin` reaches the
-expected host; `id`, `hostname`, `sudo -v` and `sudo -l` establish the admin identity
-and permitted actions. The operator handles any password prompt privately. Test the
-agent's actual execution channel too: `sudo -n true` probes general noninteractive
-sudo, not command-specific permissions. Record the result and verify the exact
-reviewed privileged command before phase 2; interactive success alone is
-insufficient. Prepare that privilege path during phase 1. Do not compensate by
-adding general passwordless sudo or sending a password through command arguments.
-
-**Failure/resume:** retain the original root session. Inspect the confirmed route,
-host-key match, account home, file permissions and authorized public-key fingerprint.
-Reuse an existing valid key/account; do not reset credentials or relax SSH checks.
-Read-only discovery may proceed without unattended sudo; privileged setup may not.
+Completed for srv1. See the [reviewed bootstrap procedure](history/completed-bootstrap-2026-10-25.md#establish-access). Do not rerun completed setup.
 
 ### Complete targeted discovery and required implementation
 
-For additional operators, use the [shared key handoff](#shared-operator-key-handoff)
-instead of creating another account or regenerating the installed key.
+Completed for srv1. See the [reviewed bootstrap procedure](history/completed-bootstrap-2026-10-25.md#complete-targeted-discovery-and-required-implementation). Do not rerun completed setup.
 
 #### Scoped privileged discovery
 
-The [discovery helper](../scripts/srv1-discovery.py) and
-[one-time installer](../scripts/install-discovery.sh) were installed and verified
-on October 22; see the [acceptance evidence](inventory/srv1.md#scoped-discovery-installation-and-acceptance--2026-10-22).
-They cover container names/images/status/ports, Docker IPAM, UFW status and cron
-filenames only. They do not disclose container environment, command lines, logs,
-cron contents or credentials. Provider firewall and effective packet filtering
-remain separate checks. This helper cannot bootstrap or deploy an application.
-
-The agent staged both files in `/home/uniwares-ops-admin/` on October 22. The
-operator runs this block in the existing trusted **root VPS session**. Copying the
-installer into a fresh root-only directory before checking it prevents the shared
-account from changing the verified installer while it executes:
-
-```bash
-(
-  set -e
-  work=$(mktemp -d /root/uniwares-install.XXXXXXXX)
-  trap 'rm -rf -- "$work"' EXIT
-  cp /home/uniwares-ops-admin/install-discovery.sh "$work/install.sh"
-  printf '%s  %s\n' 8914e01c19340674ea1fe3f6de35fc8f6d29bae989b97f630ac0aae44163981c "$work/install.sh" | sha256sum --check
-  bash "$work/install.sh"
-)
-```
-
-The installer verifies the helper hash, trusted parent directories and sudoers
-syntax. It installs root-owned `/usr/local/sbin/uniwares-discovery` and one sudoers
-rule for that exact command with no arguments. Existing destinations cause it to
-stop for inspection. On partial failure, inspect both destinations and sudoers;
-do not overwrite an existing installation blindly. To revoke this new grant,
-root removes only `/etc/sudoers.d/uniwares-discovery` and validates with `visudo -c`.
-
-After installation the agent runs `sudo -n /usr/local/sbin/uniwares-discovery`.
-Verify that arguments are denied and `sudo -n true` still fails. The deploy account,
-general sudo, Docker-group membership, services and firewall rules remain unchanged.
-Local tests, VPS non-root refusal/syntax checks, root installation, positive
-privileged execution and argument/unrelated-command denial checks passed. The
-installation block is retained for reference; do not repeat it on the verified host.
-
-**Owner/location:** agent through established read-only VPS/provider access and
-development checkouts. Gather host/VPN routes, effective ingress rules, selected
-port/subnet, Compose compatibility, tunnel/DNS authority and staging provider
-bindings in one pass. Inspect private configuration locally; publish only allowlisted
-facts, not full Compose renders, environment files or secret-bearing cron entries.
-Full legacy gateway migration, external Redis selection and backup-storage selection
-do not block this initial route through the existing tunnel.
-
-The Phase 1 review package provides the first-release adaptations and upgrade plan:
-repository secrets for GitHub Free, public GHCR and anonymous pulls, shared staging
-Firebase credentials, reviewed restricted root-owned deploy operations, a compatible
-Compose upgrade, non-overlapping app networking and supported owner-side routing.
-Reuse existing Firebase/Atlas resources; do not build a generic resource-provisioning
-platform. Resolve indispensable provider enrollment/permissions in the input batch.
-Keep app Redis, worker containers, their health checks, Nginx, leases and idempotency.
-
-Use a reviewed route change in the existing owner's configuration for the first
-hostname. Adapt Unibase's verification to check the owned hostname/target before
-deployment; do not merely skip route checks or require a generic registration
-workflow to exist. Keep the owner's complete route list intact.
-
-**Expected result:** required configuration, reviewed revisions, focused validation
-and exact supported preview/apply/recovery commands. The release workflow will
-build, publish, verify an anonymous digest pull, deploy and check health in one run;
-do not add a separate image-publication workflow or demand a digest before building.
-
-**Failure/resume:** record inaccessible facts and continue independent preparation.
-Missing interfaces stay implementation work, not ad hoc host commands. A valid
-interactive admin login alone does not prove an unattended privileged execution
-path. Preserve existing credentials/resources rather than replacing them to bypass
-missing access. Return only unresolved, consequential inputs to the operator.
+Completed for srv1. See the [reviewed bootstrap procedure](history/completed-bootstrap-2026-10-25.md#scoped-privileged-discovery). Do not rerun completed setup.
 
 ## 2. Bootstrap and deploy
 
-**Owner/location:** agent through the reviewed administrative entrypoint, provider
-interfaces, tunnel owner's process and then Unibase GitHub Actions. Use the reviewed
-Phase 1 tooling and concrete scope in [staging preparation](staging-preparation.md);
-installation, provider writes and live acceptance remain pending authorization.
-
-**Action:** preview host/provider state and apply missing compatible setup. Establish
-the shared restricted deploy account/key, select and verify the Compose upgrade,
-and configure a non-overlapping app network/loopback listener. Preserve legacy Nginx
-on port 80, Dify Redis and existing Booklet/Dify services. The app's existing Compose
-stack creates its own Redis, Nginx and workers; no shared gateway/Redis is installed
-for this first release. Keep deployment credentials separate from administrator keys.
-
-Configure the verified Firebase registration/domains, app MongoDB/runtime readWrite
-access, repository secrets and tracked staging settings. Keep Dify, Stripe and MCP
-disabled. Add the exact hostname-to-private-Nginx route through
-[agentic-poc's runbook](https://github.com/karpishe-experiments/agentic-poc/blob/master/docs/deployment/runbook.md).
-Unibase retains its own release workflow and paths; it does not deploy through Booklet.
-
-Run one reviewed staging release: build -> publish public image -> verify anonymous
-digest pull -> deploy exact digest -> check web/dependencies/current workers.
-An anonymous-pull failure stops before candidate activation. A release-branch push
-already triggers deployment; do not also dispatch it manually. Record the workflow,
-source SHA, image digest and retained configuration identity. See
-[Unibase's application procedures](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md).
-
-**Expected result:** allowed deploy operations work and arbitrary shell/root/Docker
-operations are denied; new app ports/Redis stay private; one healthy candidate runs
-under the correct application identity. Existing host services remain healthy.
-
-**Failure/resume:** inspect actual installed revision, accounts, resources and
-candidate/prior-release state. Rerun preview and apply only missing compatible steps,
-preserving data and credentials. Use the reviewed package rollback for a failed
-Compose upgrade; never globally prune Docker or tear down another app. If a first
-release fails, stop only its unhealthy candidate, including its workers, and any
-candidate timers if present; retain configuration/data and fix/redeploy. There is
-no previous release to roll back to. Do not restore the DB or restart shared services.
+Completed for srv1. See the [reviewed bootstrap procedure](history/completed-bootstrap-2026-10-25.md#2-bootstrap-and-deploy). Do not rerun completed setup.
 
 ## 3. Verify and hand off
 
-**Owner/location:** agent through application check workflows and public/private
-read-only checks; operator completes user-facing authentication only where needed.
-Prerequisite: phase 2's actual successful deployment, not a queued workflow.
+**Owner/location:** agent via Unibase Actions/browser checks; operator handles
+credentials/MFA and confirms access to Actions and the protected shared key.
+Prerequisite: actual Phase 2 deployment. Collect remaining manual checks together.
 
-**Action:** verify login/Firebase helper behavior, web liveness/dependency readiness,
-current maintenance and AI-worker health (including disabled-AI status), app Redis,
-proxy headers/streaming and the unchanged Booklet/Dify/legacy service health.
-Preserve existing lease/retry/accounting behavior; validate it with isolated fixtures,
-not real charges or paid provider calls. Do not require future job endpoints/timers.
+Follow [Unibase's acceptance record](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md#phase-3--verify-and-hand-off)
+for login/session/profile/admin/logout, web/dependencies/current workers, Firebase
+helper and proxy checks. Preserve optional-provider disabled modes and use isolated
+fixtures for accounting/retry invariants. Do not introduce paid calls, job endpoints
+or new timers. Reuse the completed shared-host baseline unless new shared changes
+warrant another check.
 
-**Expected result:** record source/digest/config identity, successful checks, routine
-deploy/check/rollback entrypoints and protected secret-store references. Routine
-operations use the restricted user. Mark initial deployment verified separately
-from pending data recovery and consolidation; the operator can identify the current
-release and next failure action without reading this conversation.
+**Expected result:** passing app acceptance, installed release identity above and
+usable routine instructions below. Mark the progress row verified only after all
+required checks pass; distinguish later backup/rollback/consolidation work.
 
-**Failure/resume:** failed acceptance remains open. Diagnose and use phase 2's
-first-release handling, or the verified image/config rollback when a real healthy
-predecessor exists. Do not manufacture a second release solely to rehearse rollback.
-Keep failed restores isolated and do not resume unhealthy writers automatically.
+**Failure/resume:** preserve working services and app data; resume the failed check.
+Record a sanitized diagnostic, source/digest and workflow URL. Follow the applicable
+first-release or predecessor procedure below; never automatically restore a DB.
+
+### Routine operator quick start
+
+Run from a workstation with GitHub CLI authenticated for `Uniwares-LTD/unibase`,
+or use the corresponding workflow's **Run workflow** form in GitHub Actions.
+The runner uses protected repository secrets; no local deploy key is needed for
+routine workflow operation. Actions access and SSH operator access are separate.
+
+| Task | Action and verification |
+| --- | --- |
+| Identify serving release | Read this runbook's source/digest/config record; run Check and compare its reported serving commit/image with that record |
+| Check | Run the command below; open its exact run URL and require terminal success with healthy app, dependency and worker checks |
+| Deploy | Review and authorize the application revision; publish that revision to `_staging` once. The automatic Release builds/publishes, proves anonymous digest pull and deploys. Record terminal result and serving identity; do not also dispatch the same release |
+| Roll back | Only with a retained compatible healthy predecessor, select `_staging` in Restore previous Unibase release with `environment=staging`. Inspect current/predecessor state first; rollback may change the serving release and config but never restore the DB |
+| Privileged maintenance | Use the separately authorized trusted root/operator procedure. `srv1-ops-admin` currently grants only fixed discovery sudo; routine deploy has neither general sudo nor Docker-group access |
+
+```powershell
+gh workflow run check-deployment.yml --repo Uniwares-LTD/unibase --ref _staging -f environment=staging
+gh run list --repo Uniwares-LTD/unibase --workflow check-deployment.yml --limit 1
+# Use the ID for the exact run you just dispatched, not a concurrent operator's run:
+gh run view RUN_ID --repo Uniwares-LTD/unibase --exit-status
+```
+
+`gh run view --exit-status` reports a completed run; a queued/running run is not
+acceptance. Inspect its status and wait for that same run rather than dispatching
+another operation. Use `gh run watch RUN_ID --repo Uniwares-LTD/unibase --exit-status`
+in an operator terminal when desired. Agent polling remains bounded.
+
+**Failure routing:** a failed build/publish/anonymous pull makes no host deployment.
+An uncertain client timeout requires inspecting the same run and restricted Check
+before retrying. With no predecessor, failed deployment stops only its candidate
+app/workers (and candidate timers if present); preserve config/data and correct the
+cause. After a later release, inspect whether automatic image/config restoration
+already succeeded before selecting manual Rollback. Never repeat bootstrap to fix
+an application release failure. Root-owned control/config changes require a reviewed
+operator bundle update; pushing an image cannot replace the installed control code.
+
+**Secret references:** see [workflow credentials](#workflow-credentials),
+[provider access](provider-access.md) and the
+[shared operator key handoff](#shared-operator-key-handoff). Records contain names,
+consumers and locations, never values. Keep the shared vault's protected copy and
+recipient list authoritative; do not make keys downloadable from GitHub.
 
 ## After first deployment
 
@@ -360,7 +262,7 @@ privileged operations exist; sharing this key does not enable unattended sudo.
 Report only results and the local key/profile reference, never the private key or
 passphrase. Each device's successful connection must be verified separately.
 
-This admin key is separate from the future restricted deployment key below. Do not
+This admin key is separate from the installed restricted deployment key below. Do not
 put it into routine application deployment workflows.
 
 ### Workflow credentials
@@ -402,7 +304,10 @@ normal channel and ensure affected workflows/writers are stopped or drained.
 Do not add a host-wide journal/orchestrator. Existing agentic-poc locks remain
 unchanged. Database leases and idempotency are application correctness controls.
 
-Compose 5.6.1 is the observed package candidate, not validated compatibility.
+Compose 5.6.1 and Buildx 0.38.1 were installed and compatibility-checked on
+October 25; Docker Engine 27.0.3 was retained. The operator parsed active projects
+with their actual environment bindings and passed disposable create/start/health/remove
+checks before installation. Retained packages allow plugin rollback. For future upgrades:
 Inspect package changes and release compatibility, retain the old package/version,
 and validate existing Compose definitions without publishing rendered secrets.
 Test create/start/check/rollback with disposable resources before any affected

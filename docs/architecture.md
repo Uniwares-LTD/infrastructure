@@ -1,7 +1,9 @@
 # Shared infrastructure architecture
 
-Status: documentation baseline, 2026-10-22. The [inventory](inventory/srv1.md)
-describes observed state. The design below is not an installed topology.
+Updated 2026-10-25. The [inventory](inventory/srv1.md) owns dated host facts and
+[operations](operations.md) owns current deployment evidence. Shared accounts and
+Unibase staging are installed. Tables below describe accepted conventions;
+shared gateway/Redis and app-hosted jobs remain proposals, not installed services.
 
 ## Accepted preferences
 
@@ -38,7 +40,11 @@ before applying the convention; documentation does not retag them.
 First staging retains the existing Unibase Compose runtime: app, maintenance worker,
 AI worker, app Redis and private Nginx. The existing tunnel owner routes the staging
 hostname to that Nginx loopback listener. Select a non-overlapping app subnet and
-keep legacy public Nginx and Dify Redis unchanged. The shared conventions above
+keep legacy public Nginx and Dify Redis unchanged. Applications with nonce-based CSP and React hydration must deliver HTML without
+edge rewriting. Unibase uses private/no-store/no-transform document responses;
+the [application deployment guide](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md)
+owns its verification. Do not solve an injected decoder by weakening CSP or changing
+zone-wide settings for unrelated applications. The shared conventions above
 remain the target; shared-service and job refactors are not first-release gates.
 
 After staging works: existing Cloudflare Tunnel -> new shared gateway -> application

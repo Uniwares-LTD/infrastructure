@@ -4,6 +4,41 @@ Observed **2026-10-22**, from two operator-supplied read-only command outputs.
 This is a sanitized snapshot, not an ongoing health guarantee. No SSH credential
 was supplied and no host change was performed during this discovery.
 
+## Staging acceptance follow-up — 2026-10-25
+
+The corrective application release and independent check succeeded after a reproduced
+Cloudflare email-obfuscation/CSP hydration failure. Unibase now sends no-transform
+with its private/no-store document response; fresh authenticated account/admin pages
+show no injected decoder or new console errors. This was an application-image change,
+not host/bootstrap/provider maintenance. Installed control/config identity remains
+unchanged. The [operations release record](../operations.md#current-unibase-release--2026-10-25)
+owns the current source/digest and the original bootstrap evidence below remains dated.
+
+## Current staging bootstrap — 2026-10-25
+
+Operator output confirms Compose 5.6.1 and Buildx 0.38.1 installation, with Docker
+Engine retained. The candidate parsed the active projects with their retained
+interpolation inputs and passed a disposable create/start/health/remove check.
+The shared restricted `uniwares-deploy-user` account and root-owned control bundle
+are installed. A checksum-bound, single-file null-IPAM preflight repair selected
+bundle `15bc84b1691eb42fd6053c36a4363aa0c18b5ba51e210521e41e9209d7ea18f2`.
+Runtime preview/apply and additive indexes completed (`PHASE2_PREPARATION_OK`).
+Before first release, agent-side restricted check reached `No current release`,
+replacing the earlier missing-setup result. Subsequent release/check workflows
+verified Unibase app and both workers healthy, with private Redis and Nginx bound
+only to `127.0.0.1:35101`. The application network is `172.30.241.0/24`.
+The [operations record](../operations.md#current-unibase-release--2026-10-25)
+owns source/image/configuration identities and workflow evidence.
+
+Scoped discovery immediately before release found Booklet staging/production
+healthy, Dify's previously health-checked services healthy and legacy services
+running as before. Xray remains in its pre-existing restart loop; no Xray repair,
+Engine upgrade, legacy migration or broad cleanup is included. Historical tables
+below retain their October 22 provenance; use the operations progress table for
+subsequent application release evidence. During release, Booklet's separate owner
+deployment temporarily stopped staging; the final scoped check found it healthy
+again. Booklet production, Dify and legacy service statuses were retained.
+
 ## Host and capacity
 
 | Item | Observation |
@@ -248,19 +283,39 @@ inventory. This feature concerns IPv4; it does not certify IPv6 filtering.
 
 ### Live follow-up — 2026-10-24
 
-Read-only provider access now confirms tunnel `kids-booklet-vps`, UUID
+Phase 2 refresh at 15:42 UTC: Booklet staging and production were healthy, with no
+temporary Booklet operation container present. Dify/legacy statuses were unchanged;
+Xray continued its pre-existing restart loop. Root filesystem had 39 GiB free.
+Compose remained 2.28.1 and `uniwares-deploy-user` was absent before the root batch.
+
+Authorized Phase 2 provider changes: added `unibase-staging.uniwares.co.uk` to
+Firebase's authorized domains while preserving previous entries; created Atlas
+`unibase_staging` with only database-scoped `readWrite`, restricted to the existing
+`kids-booklet` cluster. The operator updated Google OAuth origins/redirects; the
+previous `redirect_uri_mismatch` response cleared on verification. Runtime inputs
+and the separate shared deployment key remain in protected stores, not Git.
+
+Owner workflow [40109137086](https://github.com/karpishe-experiments/agentic-poc/actions/runs/40109137086)
+applied one DNS addition and one tunnel configuration update, zero deletions, at
+owner revision `50536f0`. Subsequent live verification confirmed the exact staging
+hostname, proxied CNAME and private listener route. This does not establish an
+application deployment by itself: root bootstrap and release were still pending at
+that checkpoint. The current staging bootstrap section above supersedes it.
+
+Earlier Phase 1 read-only provider access confirmed tunnel `kids-booklet-vps`, UUID
 `3d383dc7-335b-4989-b0f2-d1f32a7092f2`, healthy and Cloudflare-managed. Its live
-four hostname routes and fallback match the declaration below. There is no DNS
-record for the proposed Unibase staging hostname. The
+four hostname routes and fallback matched the declaration below. At that point
+there was no DNS record for the proposed Unibase staging hostname. The
 [preparation checklist](../staging-preparation.md) records verified Firebase/Atlas
 bindings and the remaining additive setup scope.
 
 A later scoped host discovery observed Booklet staging's normal container exited
 143 and a temporary `booklet-operation-staging` container unhealthy during an
 existing operation. Booklet production remained healthy; Dify health statuses
-were unchanged and Xray continued restarting. Do not reuse the earlier healthy
-staging observation as a Phase 2 baseline: wait for owner operations to finish and
-recheck service health. No service was changed by this discovery.
+were unchanged and Xray continued restarting. At that checkpoint the earlier healthy observation could not establish the
+Phase 2 baseline. Later October 25 discovery confirmed recovery; use the final
+baseline in the current staging bootstrap section rather than treating this
+historical operation as still active. No service was changed by this discovery.
 
 Refreshed IPv4 routes and Docker IPAM cover 172.17.0.0/16 through 172.29.0.0/16;
 no route overlap with proposed 172.30.241.0/24 or listener on 35101 was observed.
