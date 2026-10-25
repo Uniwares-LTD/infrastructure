@@ -111,6 +111,19 @@ are unused. Runtime files and retained snapshots on the VPS remain private.
 
 ### Optional and legacy inputs
 
+For the approved staging AI activation, use protected files named
+`staging-dify-management.txt`, `staging-dify-credential-encryption.txt`,
+`staging-dify-execution-unibase.txt`, `staging-mcp-token-dify.txt` and
+`staging-persona-completion.txt`. Retrieve existing valid credentials from the secure
+Credentials channel; generate dedicated staging MCP/encryption values and obtain
+the separate staging app's key. Do not copy a local execution key into staging without
+verifying its app binding. Keep public endpoints/workspace/app IDs in app JSON.
+
+The encryption key protects both managed Dify credentials and stored Run capabilities.
+Without an explicit key, current code derives encryption from the management key;
+changing that key may break decryption. Preserve the encryption key with protected
+recovery materials and do not rotate it while encrypted records depend on it.
+
 These are **not required while disabled**. Public endpoints, workspace IDs, bucket
 names and client permissions belong in public configuration; keys stay private.
 
@@ -271,3 +284,30 @@ References: [Firebase Admin setup](https://firebase.google.com/docs/admin/setup)
 [Cloudflare API tokens](https://developers.cloudflare.com/fundamentals/api/get-started/create-token/).
 
 Return to the [three-phase runbook](operations.md#1-connect-and-prepare).
+
+## Guided application initialization
+
+Use Unibase's [guided setup checklist](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md#guided-setup-helper)
+for application file consumers and command ordering. Its public profile is tracked
+environment JSON; GitHub Actions variables remain unused. The helper can reconcile
+Firebase registration/authorized domains and an Atlas scoped user with authorized
+write access, generate per-app credentials, and populate the three existing repository
+secret interfaces. Read-only discovery credentials do not imply write permission.
+OAuth console entries, host allocation, owner-managed routes, root installation and
+interactive acceptance remain explicit checkpoints. Production is not enabled by it.
+
+Keep exports under a protected local directory, outside Git. Generated child exports
+use `<directory>/<project>/staging/`; this grouping prevents accidental reuse of
+Unibase's Redis/MCP/encryption files. Preserve previously distributed filenames via
+the application guide's mappings. The current Unibase AI preparation uses the existing
+protected `%USERPROFILE%\.config\unibase\ai-staging` directory; do not rename or
+replace those files merely to match a child directory layout.
+
+The five [AI exports listed above](#optional-and-legacy-inputs) were prepared and
+installed for Unibase staging on 2026-10-25. Their secure Credentials channel
+publication is not confirmed. Preserve existing local exports; do not regenerate
+installed keys. The operator should store originals under the named vault items,
+with execution/MCP/encryption keys scoped to the app/environment. Application
+acceptance status belongs in the application deployment guide; installed release
+identity belongs in [operations](operations.md#current-unibase-release--2026-10-25).
+No runtime AI credential was added to GitHub repository secrets.

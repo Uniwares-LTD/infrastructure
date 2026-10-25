@@ -6,7 +6,9 @@ Public app settings use tracked environment JSON, not Actions variables. Each PR
 prepared for publication must state `Operator intervention: none` or identify actions,
 owner, execution location, ordering, verification and failure/resume. Image releases
 cannot update root-owned tooling or provider bindings. Runtime-secret restoration
-and a unified initialization command remain implementation work, not installed operations.
+and fully unattended initialization remain implementation work. Unibase's guided
+setup helper covers credential validation, supported provider bindings and repository
+secrets; its deployment guide lists the remaining operator checkpoints.
 
 Use three phases to reach a working Unibase staging deployment. Keep the existing
 application workers, application Redis and private Nginx for the first release.
@@ -43,6 +45,9 @@ Use this table for current status, not a chronological log. Status values are
 pending, in progress, blocked and verified. Retain only sanitized verification
 and non-secret workflow/release identifiers.
 
+These checkpoints record the basic staging deployment. The optional AI extension
+and its remaining acceptance are recorded separately in the current release below.
+
 | Phase | Status | Reviewed revision | Verification | Next action |
 | --- | --- | --- | --- | --- |
 | 1 Connect and prepare | Verified (preparation only) | Infrastructure `bb041e4`, Unibase `6edc411`, owner `c182b64` | October 24: provider reads, inventory, 47 Linux deployment tests, 10 Infrastructure tests and 3 Terraform mock tests; separate read-only review | Complete; subsequent live acceptance is recorded in Phase 2 |
@@ -52,22 +57,22 @@ and non-secret workflow/release identifiers.
 ### Current Unibase release — 2026-10-25
 
 - Staging: <https://unibase-staging.uniwares.co.uk/account>, branch `_staging`.
-- Source: `215044b89537feb3dcfe5acc290f5634efb09892`.
-- Image: `ghcr.io/uniwares-ltd/unibase@sha256:adee7653a0901b7340b300843066f5f7542e86dfa0bc0f569b7bc3dc357848d1`.
-- Installed control bundle: `15bc84b1691eb42fd6053c36a4363aa0c18b5ba51e210521e41e9209d7ea18f2`.
-- Tracked staging configuration SHA-256: `5b1eb3cbc4658f1a0de990484b0744fed313a6473585cc107a284d4aa6478582`.
-  Private runtime snapshots remain under `/opt/unibase/staging/releases/`; the
-  `current` symlink selects the serving configuration. Never copy their contents to Git.
-- [Corrective release](https://github.com/Uniwares-LTD/unibase/actions/runs/40176352821)
-  and [independent check](https://github.com/Uniwares-LTD/unibase/actions/runs/40176659441)
-  passed. It fixes Cloudflare HTML rewriting using the app's no-transform response;
-  no host control, runtime credential, tunnel or provider configuration changed.
-- The first working source `edcc21d` and its public digest
-  `sha256:2e4e1ffac7ba401b924c657fe1b9d155cf926dd75d35a47aca0c2ca6fcd7ac1b`
-  are the preceding release identity. The successful deploy path retains the prior
-  snapshot through `previous`; inspect retained state/compatibility before rollback.
-  No rollback rehearsal was performed, and reverting the correction reintroduces
-  the known email-obfuscation issue. No database migration occurred.
+- Source: `1f19ce3963bbd41588b0972b8d55717a97ed1fb5`.
+- Image: `ghcr.io/uniwares-ltd/unibase@sha256:ae8d7bbb5468f1f6ad7f481a9b3c2403a98cdaec34f3ebbb348488e8d30dce9d`.
+- Installed control bundle: `4ce4da8ea0c9842330eeb6c96cf41aa26ecbaab6daf16cf6e7a5481ea4482fa2`.
+- Tracked staging configuration SHA-256: `c13b8b81304490c768c07b769f1b650215d04211d4ce5504a1029dfa85aac91c`.
+- Operator output confirms optional AI/MCP preview, encryption compatibility and
+  `AI_CONFIGURATION_PREPARED`. [Release 40188936199](https://github.com/Uniwares-LTD/unibase/actions/runs/40188936199)
+  passed on October 25, including anonymous digest pull and deployment health checks.
+  This is runtime readiness, not completed Dify/Persona application acceptance;
+  the [application checklist](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md#ai-activation-in-progress)
+  owns remaining integration checks.
+- Private release snapshots remain under `/opt/unibase/staging/releases/`; `current`
+  selects the serving snapshot. The prior release was `215044b` with image
+  `sha256:adee7653a0901b7340b300843066f5f7542e86dfa0bc0f569b7bc3dc357848d1`.
+  Inspect retained state before rollback; no rollback rehearsal or data restore
+  occurred. Operator-update backups preserve previous runtime/control bytes separately.
+  Never copy private snapshots or backup contents to Git.
 
 Routine operations use Unibase's own workflows on `_staging`:
 
@@ -174,6 +179,43 @@ consumers and locations, never values. Keep the shared vault's protected copy an
 recipient list authoritative; do not make keys downloadable from GitHub.
 
 ## After first deployment
+
+### Optional AI configuration update
+
+`scripts/update-app-config.py` is the root-only update interface used successfully
+on srv1 on 2026-10-25. It runs from a reviewed operator package, not through routine
+SSH dispatch. It preserves account privileges and does not start containers.
+Supported scope is staging AI/MCP runtime settings only; base
+identity, Firebase, MongoDB, Redis, payments and storage changes are rejected.
+
+The reviewed operator package must include this script and its sibling
+`bootstrap-deploy.py`, a checksum-verified immutable app archive and a root-only
+JSON private-input file. Required arguments are `--project`, `--expected-revision`
+(currently installed bundle SHA-256), `--bundle`, `--sha256` and `--private-input`.
+Preview first; `--apply` selects the validated runtime/control bundle. Concrete
+host commands/checksums are generated only after bindings and the revision are reviewed.
+
+The tool takes the existing application operation lock, checks candidate config and
+the live database for existing encrypted credentials/active capabilities before first
+encryption-key installation. It refuses encryption changes while Dify/MCP writers
+are enabled. General key migration is outside this interface. A running app container
+with the MongoDB Node module is required for the read-only compatibility probe.
+
+The private input accepts only `DIFY_MANAGEMENT_KEY`,
+`DIFY_CREDENTIAL_ENCRYPTION_KEY`, `PERSONA_COMPLETION_API_KEY`, and referenced
+`DIFY_KEY_*`/`MCP_TOKEN_*` credentials. No local environment file is an input.
+During apply, registration is temporarily invalidated to refuse new dispatch until
+runtime and control selection agree. A private `config-update-pending` journal under
+the app state directory records original bytes; caught failures restore them.
+After an interrupted process, inspect state and invoke the same reviewed tool with
+`--project`, the previous `--expected-revision`, `--recover --apply` before retrying.
+Recovery preserves data and running containers. Successful updates retain a private
+`config-previous-<bundle digest>` directory; do not publish or automatically delete it.
+
+Application release follows separately using the matching reviewed configuration.
+Before release, the old containers still serve their old snapshots. On failed release,
+inspect automatic image/config restoration and coordinate operator configuration
+recovery; never automatically restore MongoDB or change unrelated services.
 
 Track these explicitly in the [implementation plan](implementation-plan.md):
 shared gateway, shared application Redis/logical DBs, app-hosted jobs/timers,
