@@ -2,8 +2,12 @@
 
 Use the [three-phase runbook](operations.md) for execution and its single
 configuration/progress table. This plan separates first deployment from later
-consolidation. Phase 1 preparation is complete; live setup and application deployment
-remain unverified. [Inventory](inventory/srv1.md) records the dated baseline.
+consolidation. Phase 1 preparation is complete. October 25 operator output confirms
+plugin upgrades and restricted deployment account/control installation; runtime
+preparation and application deployment remain incomplete. Resume at the failed
+preparation checkpoint using Unibase's reviewed null-IPAM preflight repair;
+do not repeat the package/account bootstrap. The [operations status table](operations.md#configuration-and-progress)
+records current evidence. [Inventory](inventory/srv1.md) records the dated baseline.
 
 Access progress, 2026-10-22: operator key login and the trusted-root host fingerprint
 are verified. Shared-key distribution uses the [operator handoff](operations.md#shared-operator-key-handoff).
