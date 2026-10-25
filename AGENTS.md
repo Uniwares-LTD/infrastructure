@@ -39,6 +39,10 @@
   restricted deploy user has neither general sudo nor Docker-group membership.
 - Preserve application leases, idempotency and financial records when simplifying
   scheduling. Host coordination does not replace application correctness mechanisms.
+- Keep current shared progress in operations.md and application acceptance in its
+  deployment guide. Link instead of copying changing facts. Completed bootstrap
+  procedures/history are reference material, not commands to rerun. Reuse prior
+  unaffected-service evidence unless a new shared-host change warrants checking it.
 - Update canonical docs with verified changes and link to application guidance.
   Run relevant checks and perform a separate read-only review before publication.
 - `main` is this repository's default branch. Application release branches and

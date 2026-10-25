@@ -289,7 +289,8 @@ Owner workflow [40109137086](https://github.com/karpishe-experiments/agentic-poc
 applied one DNS addition and one tunnel configuration update, zero deletions, at
 owner revision `50536f0`. Subsequent live verification confirmed the exact staging
 hostname, proxied CNAME and private listener route. This does not establish an
-application deployment: root bootstrap and the first release remain pending.
+application deployment by itself: root bootstrap and release were still pending at
+that checkpoint. The current staging bootstrap section above supersedes it.
 
 Earlier Phase 1 read-only provider access confirmed tunnel `kids-booklet-vps`, UUID
 `3d383dc7-335b-4989-b0f2-d1f32a7092f2`, healthy and Cloudflare-managed. Its live
@@ -301,9 +302,10 @@ bindings and the remaining additive setup scope.
 A later scoped host discovery observed Booklet staging's normal container exited
 143 and a temporary `booklet-operation-staging` container unhealthy during an
 existing operation. Booklet production remained healthy; Dify health statuses
-were unchanged and Xray continued restarting. Do not reuse the earlier healthy
-staging observation as a Phase 2 baseline: wait for owner operations to finish and
-recheck service health. No service was changed by this discovery.
+were unchanged and Xray continued restarting. At that checkpoint the earlier healthy observation could not establish the
+Phase 2 baseline. Later October 25 discovery confirmed recovery; use the final
+baseline in the current staging bootstrap section rather than treating this
+historical operation as still active. No service was changed by this discovery.
 
 Refreshed IPv4 routes and Docker IPAM cover 172.17.0.0/16 through 172.29.0.0/16;
 no route overlap with proposed 172.30.241.0/24 or listener on 35101 was observed.

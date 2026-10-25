@@ -58,10 +58,12 @@ For Cloudflare, use a scoped API token with **Account: Cloudflare Tunnel: Read**
 the existing owner's account and **Zone: DNS: Read** on `uniwares.co.uk`. This is
 an API token, not a tunnel connector token or Global API Key. Existing owner
 configuration identifies the account/zone; see [the inventory](inventory/srv1.md).
-Tunnel and DNS writes stay with agentic-poc's owner process. The app's later
+Tunnel and DNS writes stay with agentic-poc's owner process. The app's installed
 `CLOUDFLARE_READ_TOKEN` repository secret needs only these read permissions.
 
-Send one reply listing the available paths and anything unavailable. The agent
+For a new operator/missing credential only, provide the available protected references
+and anything unavailable in one reply. Existing staging credentials are already installed;
+do not request them again to run acceptance or routine deployment. The agent
 reads only the necessary files, suppresses secret-bearing output, and records
 non-secret identifiers and permission results. Never copy provider credentials
 into a deployment control bundle. Discovery does not authorize resource changes.

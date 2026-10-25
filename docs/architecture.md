@@ -1,7 +1,9 @@
 # Shared infrastructure architecture
 
-Status: documentation baseline, 2026-10-22. The [inventory](inventory/srv1.md)
-describes observed state. The design below is not an installed topology.
+Updated 2026-10-25. The [inventory](inventory/srv1.md) owns dated host facts and
+[operations](operations.md) owns current deployment evidence. Shared accounts and
+Unibase staging are installed. Tables below describe accepted conventions;
+shared gateway/Redis and app-hosted jobs remain proposals, not installed services.
 
 ## Accepted preferences
 

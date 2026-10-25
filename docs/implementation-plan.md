@@ -7,26 +7,17 @@ plugin upgrades, restricted deployment account/control installation, the reviewe
 null-IPAM preflight repair, private runtime preparation and additive index setup.
 The first staging release and independent restricted check passed; final discovery
 found Booklet staging/production, Dify and legacy services at their expected baseline.
-Phase 2 is verified; Phase 3 user sign-in and handoff remain pending.
+Phase 2 is verified. Phase 3 has confirmed Google admin login, session/profile
+persistence, admin access, logout/re-login and a fresh restricted Check. Workstation Actions/pinned SSH access is also verified. Incognito login/logout is operator-confirmed. Cloudflare rewriting caused a CSP/
+hydration regression; verify the app-owned no-transform correction before closing
+Phase 3. The application guide owns the acceptance record.
 Do not repeat completed bootstrap operations. The [operations status table](operations.md#configuration-and-progress)
 records current evidence. [Inventory](inventory/srv1.md) records the dated baseline.
 
-Access progress, 2026-10-22: operator key login and the trusted-root host fingerprint
-are verified. Shared-key distribution uses the [operator handoff](operations.md#shared-operator-key-handoff).
-Agent-side strict-host-key SSH and non-privileged discovery are also verified.
-That initial access checkpoint did not establish bootstrap or deployment acceptance;
-the current verified status above supersedes its pending setup. See the inventory
-for routes, listeners and access limitations.
-
-Scoped discovery tooling is installed: fixed no-argument helper and hash-verified
-root installer. Local boundary tests, VPS syntax/non-root refusal checks, operator
-installation and agent-side scoped-sudo positive/negative checks pass. The inventory
-records the observed Docker state and remaining discovery limits. The discovery helper
-grants no setup privileges; routine releases use the separately installed dispatcher.
-
-The [October 24 preparation package](staging-preparation.md) records provider read
-results, the proposed non-overlapping subnet, prepared dispatcher and concrete live
-change scope. Local preparation does not install accounts or change services.
+Completed bootstrap procedures are [historical references](history/completed-bootstrap-2026-10-25.md),
+not a pending checklist. The [preparation package](staging-preparation.md) preserves
+the reviewed Phase 1 scope; live status belongs in operations. Application acceptance
+belongs in Unibase's deployment guide. Avoid duplicating release IDs and test logs here.
 
 ## First deployment
 
@@ -39,8 +30,8 @@ change scope. Local preparation does not install accounts or change services.
    Adapt route verification without building a generic registration platform.
    One release workflow builds, publishes, verifies anonymous digest pull, deploys
    and checks health. Keep existing workers and app Redis.
-3. **Verify and hand off.** Check login, readiness, existing workers and unchanged host
-   services. Record release identity, routine workflow instructions and deferred work.
+3. **Verify and hand off.** Complete app login/session acceptance, readiness and current worker checks.
+   Reuse the completed shared-host baseline unless new changes affect it. Record release identity, routine workflow instructions and deferred work.
    A failed first release stops only its candidate/workers and any candidate timers;
    preserve data/configuration. No imaginary prior-release or DB rollback.
 
