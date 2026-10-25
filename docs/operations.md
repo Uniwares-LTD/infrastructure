@@ -46,7 +46,7 @@ pending, in progress, blocked and verified. Retain only sanitized verification
 and non-secret workflow/release identifiers.
 
 These checkpoints record the basic staging deployment. The optional AI extension
-and its remaining acceptance are recorded separately in the current release below.
+and its acceptance are recorded separately in the current release below.
 
 | Phase | Status | Reviewed revision | Verification | Next action |
 | --- | --- | --- | --- | --- |
@@ -64,9 +64,10 @@ and its remaining acceptance are recorded separately in the current release belo
 - Operator output confirms optional AI/MCP preview, encryption compatibility and
   `AI_CONFIGURATION_PREPARED`. [Release 40188936199](https://github.com/Uniwares-LTD/unibase/actions/runs/40188936199)
   passed on October 25, including anonymous digest pull and deployment health checks.
-  This is runtime readiness, not completed Dify/Persona application acceptance;
-  the [application checklist](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md#ai-activation-in-progress)
-  owns remaining integration checks.
+  Subsequent bounded Dify/MCP/Persona application acceptance also passed;
+  the [application acceptance record](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md#ai-activation-and-acceptance)
+  owns Run, persistence and accounting evidence. No new release was needed for
+  saved application/provider settings.
 - Private release snapshots remain under `/opt/unibase/staging/releases/`; `current`
   selects the serving snapshot. The prior release was `215044b` with image
   `sha256:adee7653a0901b7340b300843066f5f7542e86dfa0bc0f569b7bc3dc357848d1`.
