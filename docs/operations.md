@@ -6,7 +6,9 @@ Public app settings use tracked environment JSON, not Actions variables. Each PR
 prepared for publication must state `Operator intervention: none` or identify actions,
 owner, execution location, ordering, verification and failure/resume. Image releases
 cannot update root-owned tooling or provider bindings. Runtime-secret restoration
-and a unified initialization command remain implementation work, not installed operations.
+and fully unattended initialization remain implementation work. Unibase's guided
+setup helper covers credential validation, supported provider bindings and repository
+secrets; its deployment guide lists the remaining operator checkpoints.
 
 Use three phases to reach a working Unibase staging deployment. Keep the existing
 application workers, application Redis and private Nginx for the first release.
@@ -174,6 +176,42 @@ consumers and locations, never values. Keep the shared vault's protected copy an
 recipient list authoritative; do not make keys downloadable from GitHub.
 
 ## After first deployment
+
+### Optional AI configuration update
+
+`scripts/update-app-config.py` is a prepared root-only update interface; it has not
+been installed or accepted on srv1. It preserves account privileges and does not
+start containers. Supported scope is staging AI/MCP runtime settings only; base
+identity, Firebase, MongoDB, Redis, payments and storage changes are rejected.
+
+The reviewed operator package must include this script and its sibling
+`bootstrap-deploy.py`, a checksum-verified immutable app archive and a root-only
+JSON private-input file. Required arguments are `--project`, `--expected-revision`
+(currently installed bundle SHA-256), `--bundle`, `--sha256` and `--private-input`.
+Preview first; `--apply` selects the validated runtime/control bundle. Concrete
+host commands/checksums are generated only after bindings and the revision are reviewed.
+
+The tool takes the existing application operation lock, checks candidate config and
+the live database for existing encrypted credentials/active capabilities before first
+encryption-key installation. It refuses encryption changes while Dify/MCP writers
+are enabled. General key migration is outside this interface. A running app container
+with the MongoDB Node module is required for the read-only compatibility probe.
+
+The private input accepts only `DIFY_MANAGEMENT_KEY`,
+`DIFY_CREDENTIAL_ENCRYPTION_KEY`, `PERSONA_COMPLETION_API_KEY`, and referenced
+`DIFY_KEY_*`/`MCP_TOKEN_*` credentials. No local environment file is an input.
+During apply, registration is temporarily invalidated to refuse new dispatch until
+runtime and control selection agree. A private `config-update-pending` journal under
+the app state directory records original bytes; caught failures restore them.
+After an interrupted process, inspect state and invoke the same reviewed tool with
+`--project`, the previous `--expected-revision`, `--recover --apply` before retrying.
+Recovery preserves data and running containers. Successful updates retain a private
+`config-previous-<bundle digest>` directory; do not publish or automatically delete it.
+
+Application release follows separately using the matching reviewed configuration.
+Before release, the old containers still serve their old snapshots. On failed release,
+inspect automatic image/config restoration and coordinate operator configuration
+recovery; never automatically restore MongoDB or change unrelated services.
 
 Track these explicitly in the [implementation plan](implementation-plan.md):
 shared gateway, shared application Redis/logical DBs, app-hosted jobs/timers,

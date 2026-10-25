@@ -1,5 +1,10 @@
 # Infrastructure guidance
 
+- Guided application initialization is documented in Unibase's deployment guide;
+  follow its current automation/manual boundaries. Review a concrete immutable
+  operator batch before installation. Provider operation markers represent uncertain
+  outcomes until readback; never retry a create blindly or replace generated keys.
+
 - For new deployment handoff, prompt the user to retrieve files from the secure
   **Credentials** channel and supply a protected local directory reference. Follow
   [the exact filename/reuse map](docs/provider-access.md); validate structure without
