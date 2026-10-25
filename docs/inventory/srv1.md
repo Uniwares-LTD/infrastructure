@@ -4,6 +4,16 @@ Observed **2026-10-22**, from two operator-supplied read-only command outputs.
 This is a sanitized snapshot, not an ongoing health guarantee. No SSH credential
 was supplied and no host change was performed during this discovery.
 
+## Staging acceptance follow-up — 2026-10-25
+
+The corrective application release and independent check succeeded after a reproduced
+Cloudflare email-obfuscation/CSP hydration failure. Unibase now sends no-transform
+with its private/no-store document response; fresh authenticated account/admin pages
+show no injected decoder or new console errors. This was an application-image change,
+not host/bootstrap/provider maintenance. Installed control/config identity remains
+unchanged. The [operations release record](../operations.md#current-unibase-release--2026-10-25)
+owns the current source/digest and the original bootstrap evidence below remains dated.
+
 ## Current staging bootstrap — 2026-10-25
 
 Operator output confirms Compose 5.6.1 and Buildx 0.38.1 installation, with Docker

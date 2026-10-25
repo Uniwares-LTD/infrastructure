@@ -38,21 +38,28 @@ and non-secret workflow/release identifiers.
 | Phase | Status | Reviewed revision | Verification | Next action |
 | --- | --- | --- | --- | --- |
 | 1 Connect and prepare | Verified (preparation only) | Infrastructure `bb041e4`, Unibase `6edc411`, owner `c182b64` | October 24: provider reads, inventory, 47 Linux deployment tests, 10 Infrastructure tests and 3 Terraform mock tests; separate read-only review | Complete; subsequent live acceptance is recorded in Phase 2 |
-| 2 Bootstrap and deploy | Verified | Runtime `edcc21d`; Infrastructure installer `90ed66a`; owner route `50536f0` | October 25: plugins/account/control and runtime/index preparation complete; Release `40168299056` attempt 3 and independent Check `40168997418` passed, including anonymous pull, local/public readiness and both workers. Booklet staging returned healthy after its separate owner operation; production/Dify/legacy baseline retained | Proceed to Phase 3 user acceptance; do not repeat bootstrap or deployment |
-| 3 Verify and hand off | In progress | Runtime `edcc21d` | October 25: Google admin login user-confirmed; session/profile persistence, admin access, logout/re-login and fresh Check `40170666438` verified. Detailed authentication results live in Unibase | Incognito login/logout reported complete; resolve Cloudflare rewriting/CSP hydration errors before Phase 3 acceptance |
+| 2 Bootstrap and deploy | Verified | Runtime `edcc21d`; Infrastructure installer `90ed66a`; owner route `50536f0` | October 25: plugins/account/control and runtime/index preparation complete; Release `40168299056` attempt 3 and independent Check `40168997418` passed, including anonymous pull, local/public readiness and both workers. Booklet staging returned healthy after its separate owner operation; production/Dify/legacy baseline retained | Complete; use Phase 3 routine instructions and do not repeat bootstrap |
+| 3 Verify and hand off | Verified | Corrective runtime `215044b`; handoff guidance in the draft PRs | October 25: account/admin/session/profile/logout checks, operator-reported incognito login/logout and workstation Actions/pinned SSH access verified. Corrective Release `40176352821` and independent Check `40176659441` passed; fresh account/admin loads have no injected decoder or new console errors | Routine staging uses the quick start below. Next: minimum off-host recovery workflow/rehearsal; keep consolidation and production separate |
 
 ### Current Unibase release — 2026-10-25
 
 - Staging: <https://unibase-staging.uniwares.co.uk/account>, branch `_staging`.
-- Source: `edcc21de9a501b21f63e353da9a75cdf5efb5e65`.
-- Image: `ghcr.io/uniwares-ltd/unibase@sha256:2e4e1ffac7ba401b924c657fe1b9d155cf926dd75d35a47aca0c2ca6fcd7ac1b`.
+- Source: `215044b89537feb3dcfe5acc290f5634efb09892`.
+- Image: `ghcr.io/uniwares-ltd/unibase@sha256:adee7653a0901b7340b300843066f5f7542e86dfa0bc0f569b7bc3dc357848d1`.
 - Installed control bundle: `15bc84b1691eb42fd6053c36a4363aa0c18b5ba51e210521e41e9209d7ea18f2`.
 - Tracked staging configuration SHA-256: `5b1eb3cbc4658f1a0de990484b0744fed313a6473585cc107a284d4aa6478582`.
   Private runtime snapshots remain under `/opt/unibase/staging/releases/`; the
   `current` symlink selects the serving configuration. Never copy their contents to Git.
-- [Release attempt 3](https://github.com/Uniwares-LTD/unibase/actions/runs/40168299056/attempts/3)
-  and [independent check](https://github.com/Uniwares-LTD/unibase/actions/runs/40168997418)
-  passed. Earlier attempts stopped before host activation; no failed candidate needed restoration.
+- [Corrective release](https://github.com/Uniwares-LTD/unibase/actions/runs/40176352821)
+  and [independent check](https://github.com/Uniwares-LTD/unibase/actions/runs/40176659441)
+  passed. It fixes Cloudflare HTML rewriting using the app's no-transform response;
+  no host control, runtime credential, tunnel or provider configuration changed.
+- The first working source `edcc21d` and its public digest
+  `sha256:2e4e1ffac7ba401b924c657fe1b9d155cf926dd75d35a47aca0c2ca6fcd7ac1b`
+  are the preceding release identity. The successful deploy path retains the prior
+  snapshot through `previous`; inspect retained state/compatibility before rollback.
+  No rollback rehearsal was performed, and reverting the correction reintroduces
+  the known email-obfuscation issue. No database migration occurred.
 
 Routine operations use Unibase's own workflows on `_staging`:
 
@@ -62,7 +69,8 @@ gh workflow run check-deployment.yml --repo Uniwares-LTD/unibase --ref _staging 
 
 A reviewed push to `_staging` triggers Release automatically. Do not also dispatch
 the same commit. Use Rollback only when a real compatible healthy predecessor is
-retained; this first release has none. Secret references are repository Actions
+retained; the preceding source is recorded above, without claiming a rollback rehearsal.
+Secret references are repository Actions
 secrets `DEPLOY_SSH_PRIVATE_KEY`, `DEPLOY_SSH_HOST_KEY`, `CLOUDFLARE_READ_TOKEN` and
 the protected provider handoff, not values in this document.
 

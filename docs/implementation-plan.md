@@ -7,10 +7,12 @@ plugin upgrades, restricted deployment account/control installation, the reviewe
 null-IPAM preflight repair, private runtime preparation and additive index setup.
 The first staging release and independent restricted check passed; final discovery
 found Booklet staging/production, Dify and legacy services at their expected baseline.
-Phase 2 is verified. Phase 3 has confirmed Google admin login, session/profile
-persistence, admin access, logout/re-login and a fresh restricted Check. Workstation Actions/pinned SSH access is also verified. Incognito login/logout is operator-confirmed. Cloudflare rewriting caused a CSP/
-hydration regression; verify the app-owned no-transform correction before closing
-Phase 3. The application guide owns the acceptance record.
+Phase 3 staging acceptance and handoff are now verified: Google admin/session/profile
+and logout/re-login checks, operator-reported incognito email login/logout, workstation
+Actions/pinned SSH access and fresh runtime checks passed. The Cloudflare HTML
+rewriting/CSP hydration defect was corrected by Unibase's no-transform response,
+deployed and verified on fresh account/admin loads. Current release identity and
+evidence belong in operations; app details belong in its acceptance record.
 Do not repeat completed bootstrap operations. The [operations status table](operations.md#configuration-and-progress)
 records current evidence. [Inventory](inventory/srv1.md) records the dated baseline.
 

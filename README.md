@@ -5,7 +5,7 @@ applications. It includes documentation and a narrowly scoped discovery helper
 with a one-time root installer, plus reviewed staging bootstrap/dispatcher tooling. The operator installed this helper and its scoped
 sudo rule; agent-side acceptance passed. Operator-created admin access is recorded
 in the inventory. Restricted deployment bootstrap and Unibase's first staging
-deployment are verified; Phase 3 acceptance is in progress. Shared gateway/Redis,
+deployment and Phase 3 staging acceptance/handoff are verified. Shared gateway/Redis,
 recovery rehearsals and ownership transfers remain later work. The default branch is `main`.
 
 ## Read first
