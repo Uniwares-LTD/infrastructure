@@ -303,12 +303,11 @@ the application guide's mappings. The current Unibase AI preparation uses the ex
 protected `%USERPROFILE%\.config\unibase\ai-staging` directory; do not rename or
 replace those files merely to match a child directory layout.
 
-On 2026-10-25 the dedicated Dify staging app and five AI exports were prepared:
-`staging-dify-management.txt`, `staging-dify-credential-encryption.txt`,
-`staging-dify-execution-unibase.txt`, `staging-mcp-token-dify.txt`,
-`staging-persona-completion.txt`. Their secure Credentials channel publication is
-not confirmed. The operator should store them under the existing named vault items,
-with the app execution/MCP/encryption keys scoped to Unibase staging. Encryption-key
-loss prevents recovery of encrypted managed Dify credentials and Run capabilities;
-retain that key separately with database recovery material. Do not rotate it as a
-routine retry. No runtime AI credential was added to GitHub repository secrets.
+The five [AI exports listed above](#optional-and-legacy-inputs) were prepared and
+installed for Unibase staging on 2026-10-25. Their secure Credentials channel
+publication is not confirmed. Preserve existing local exports; do not regenerate
+installed keys. The operator should store originals under the named vault items,
+with execution/MCP/encryption keys scoped to the app/environment. Application
+acceptance status belongs in the application deployment guide; installed release
+identity belongs in [operations](operations.md#current-unibase-release--2026-10-25).
+No runtime AI credential was added to GitHub repository secrets.

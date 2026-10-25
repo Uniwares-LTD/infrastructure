@@ -13,6 +13,10 @@ Actions/pinned SSH access and fresh runtime checks passed. The Cloudflare HTML
 rewriting/CSP hydration defect was corrected by Unibase's no-transform response,
 deployed and verified on fresh account/admin loads. Current release identity and
 evidence belong in operations; app details belong in its acceptance record.
+The optional AI runtime/control update is now installed and its staging release passed.
+Application-level Dify/MCP/Persona acceptance remains open in Unibase; a healthy
+release does not complete that milestone. Guided initialization has synthetic
+coverage, with fresh derived provider-write acceptance still outstanding.
 Do not repeat completed bootstrap operations. The [operations status table](operations.md#configuration-and-progress)
 records current evidence. [Inventory](inventory/srv1.md) records the dated baseline.
 
