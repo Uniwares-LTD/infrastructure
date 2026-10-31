@@ -79,3 +79,8 @@ credential ownership, rollback and acceptance. Unibase never deploys through
 Booklet's workflow or release paths.
 
 See [operations](operations.md) and [implementation plan](implementation-plan.md).
+
+
+## Operational documentation ownership
+
+Application deployment guides own current release identities and acceptance. Infrastructure inventory owns installed host/configuration identities and dated capacity; its operations guide owns installation, privileged updates and recovery. Shared gateway/Redis/worker consolidation remains deferred. Documentation does not transfer Booklet, Dify or tunnel ownership.

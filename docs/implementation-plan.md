@@ -82,8 +82,9 @@ covers a concrete reviewed scope; unexpected destructive changes require reasses
   treating staging data as recoverable; backup before destructive changes/migrations.
 - [ ] Rehearse image/config rollback when a real compatible previous release exists;
   do not create a release solely to satisfy a runbook checkpoint.
-- [ ] Define image retention before selective cleanup. Evaluate legacy public gateway,
-  Dify/tunnel ownership transfers, Engine upgrades and production separately.
+- [x] Implement Unibase image retention and verify the authorized initial cleanup.
+- [ ] Activate automatic policy/timer only after the separate acceptance and authorization.
+- [ ] Evaluate legacy public gateway, Dify/tunnel ownership transfers, Engine upgrades and production separately.
 
 ## Remaining decisions
 
@@ -91,7 +92,7 @@ First-deployment preparation has selected the dispatcher, existing provider bind
 hostname, private listener and candidate subnet/Compose versions; see the preparation
 package. Root installation, Compose/Buildx compatibility, provider writes and the
 owner route are verified. Application release/acceptance evidence belongs to the
-operations progress table; do not infer live health from successful preparation.
+application deployment guide; do not infer live health from successful preparation.
 
 For later work: shared network/gateway design, shared Redis location/database allocation,
 job endpoint/timer interfaces, off-host destination/retention/encryption recovery and
@@ -116,8 +117,9 @@ reviewed revision 68114406d21c7f811281503970f7982d73239c0c without changing that
 
 Preflight code and synthetic checks do not certify installed host behavior. Follow
 [deployment preflight](operations.md#deployment-preflight) for compatibility rollout
-and pending protected readback. Dispatcher installation, permission-profile update,
-application publication/release and live acceptance are separate pending operations.
+and the protected readback. Controller installation, permission-profile update and
+staging release/check are verified on October 31. Dify functional and approved-plan
+OIDC acceptance remain pending; see the host inventory and application release record.
 
 ## Accepted repeatable deployment implementation
 
@@ -129,10 +131,15 @@ activated. Admin enrollment uses the selected existing team's numeric IDs. No is
 project access or organization permissions were changed.
 
 Linux synthetic integration covers archive/updater/dispatcher, contention, approvals
-and recovery boundaries. Actual emitted GitHub OIDC claims, protected readback,
-controller installation, off-host restore rehearsal and live release acceptance remain
-rollout verification, not source-test claims. See operations.md for ordered procedures.
+and recovery boundaries. Controller installation and routine staging release/check are verified. Actual emitted
+GitHub OIDC claims, off-host restore rehearsal and protected-plan live acceptance remain
+rollout checks, not source-test claims. See operations.md for ordered procedures.
 
 ## Accepted image retention and disk protection ? 2026-10-31
 
-The accepted implementation adds explicit Unibase enrollment, three-release/fourteen-day protection, a 20 GiB pre-pull minimum, 30 GiB cleanup target and 80% usage warnings. Verification and separate read-only review precede publication. Privileged readback, exact initial cleanup approval, installation, staging release and timer activation remain separate live steps. See [the canonical procedure](operations.md#image-retention). Issue-ready outcomes: Infrastructure retention/controller tooling; related Unibase release and initializer integration. No issues created or tracking permissions changed.
+The accepted implementation adds explicit Unibase enrollment, three-release/fourteen-day protection, a 20 GiB pre-pull minimum, 30 GiB cleanup target and 80% usage warnings. Verification and separate read-only review precede publication. Privileged readback, the authorized one-time cleanup, installation and staging release/check are verified. Automatic policy/timer activation remains pending and separately authorized. See [the canonical procedure](operations.md#image-retention). Issue-ready outcomes: Infrastructure retention/controller tooling; related Unibase release and initializer integration. No issues created or tracking permissions changed.
+
+
+## Documentation reconciliation — 2026-10-31
+
+Installed host identities and capacity are canonical in [inventory](inventory/srv1.md#installed-control-and-capacity--2026-10-31); application release/check identities and acceptance are in [Unibase](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md#current-staging-release). Controller/maintenance installation, configuration correction and routine staging release/check are complete. Remaining: real OIDC approval-path acceptance, recovery configuration/rehearsal, automatic policy/timer activation, production activation and read:project verification. Documentation publication requires no host action.

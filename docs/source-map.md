@@ -9,7 +9,7 @@ configuration update and bounded discovery. [Tests](../tests) use disposable fix
 
 [README](../README.md) owns workstation setup; [architecture](architecture.md) owns
 boundaries; [inventory](inventory/srv1.md) owns dated host facts; [operations](operations.md)
-owns installation and release evidence. [Implementation plan](implementation-plan.md)
+owns installation and recovery procedures; application repositories own serving release identities and functional acceptance. [Implementation plan](implementation-plan.md)
 retains accepted milestones. [Provider access](provider-access.md) owns credential references.
 
 ## Commands
@@ -33,3 +33,5 @@ Dify and tunnel ownership remain as recorded in architecture.
 Deployment changes require configuration ownership classification and operator-impact reporting. The deployment/operations guide owns plan approval, status and recovery; contract changes require validation, update behavior and compatibility coverage.
 
 [Image maintenance](../scripts/image_maintenance.py) owns retention, disk checks and release-ledger protections. [Its operator installer](../scripts/install-image-maintenance.py) owns explicit policy and disabled timer installation. See [image retention](operations.md#image-retention) for rollout and recovery.
+
+Current procedures link to dated evidence rather than duplicating it. Superseded first-deployment evidence is retained in [history](history/deployment-evidence-2026-10-25.md); it is not a task queue or runnable update procedure.
