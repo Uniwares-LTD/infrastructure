@@ -587,7 +587,10 @@ MongoDB archive including GridFS, records its hash/identity, uploads through res
 checks the repository, then restarts those writers. Restore requires a full snapshot
 ID and explicit destination; it takes a fresh destination backup first, validates the
 selected archive and remaps namespaces explicitly. Only the configured database or
-its `_rehearsal_NAME` database is allowed. Rehearse against a disposable destination
+its `_rehearsal_NAME` database is allowed. Before the destructive restore starts,
+the status record retains the pre-restore backup ID. If restore fails or is interrupted,
+application writers stay stopped; inspect the unknown outcome and recover explicitly
+before restarting them. Failures before any database write restart the previous writers. Rehearse against a disposable destination
 before production acceptance and verify web, both workers and data afterward.
 
 There are no schedules and no retention/prune operations. Keep backups until separately

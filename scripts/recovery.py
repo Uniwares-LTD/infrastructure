@@ -77,6 +77,11 @@ def execute(plan,d):
             return summaries[0]['snapshot_id']
         running=run(compose+['ps','--status','running','--services']).decode().split()
         writers=[name for name in ('app','worker','ai-worker') if name in running]
+        restore_started=False
+        restore_completed=False
+        from operation_store import atomic
+        from operation_plan import digest
+        result_path=d.STATE/project/'operation-plans'/(digest(plan)+'.recovery.json')
         try:
             if writers:run(compose+['stop',*writers])
             if plan['classification']=='backup':
@@ -94,11 +99,14 @@ def execute(plan,d):
                 manifest=json.loads(manifests[0].read_text());archive=manifests[0].with_name('database.archive')
                 if manifest.get('project')!=project or manifest.get('environment')!=plan['environment'] or manifest.get('database')!=config['database'] or hashlib.sha256(archive.read_bytes()).hexdigest()!=manifest.get('sha256'):
                     raise ValueError('BACKUP_IDENTITY_MISMATCH')
+                atomic(result_path,{'backupId':snapshot,'destination':destination,'preRestoreBackupId':prior,'status':'restore-outcome-unknown','writersStopped':writers})
+                restore_started=True
                 run(['mongorestore','--config',str(mongo),'--archive='+str(archive),'--gzip','--drop',
                      '--nsFrom='+config['database']+'.*','--nsTo='+destination+'.*'])
+                restore_completed=True
                 result={'backupId':snapshot,'destination':destination,'preRestoreBackupId':prior}
-            from operation_store import atomic
-            from operation_plan import digest
-            atomic(d.STATE/project/'operation-plans'/(digest(plan)+'.recovery.json'),result)
+            atomic(result_path,result)
         finally:
-            if writers:run(compose+['start',*writers])
+            # A partially restored database must not receive application writes.
+            # Preserve the journal/backup identity for explicit operator recovery.
+            if writers and (not restore_started or restore_completed):run(compose+['start',*writers])
