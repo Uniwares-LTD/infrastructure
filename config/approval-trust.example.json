@@ -1,0 +1,14 @@
+{
+  "repositoryId": "1429577011",
+  "ownerId": "337243991",
+  "ref": "refs/heads/main",
+  "executorRef": "Uniwares-LTD/infrastructure/.github/workflows/apply-plan-executor.yml@00bf4d8353ddfbf8deaa38db22f040c9d948750f",
+  "executorSha": "00bf4d8353ddfbf8deaa38db22f040c9d948750f",
+  "adminIds": [
+    "11483236",
+    "11900027",
+    "112891628",
+    "172034988",
+    "191456015"
+  ]
+}

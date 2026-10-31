@@ -1,0 +1,16 @@
+{
+  "name": "uniwares-infrastructure",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "handbook:setup": "node scripts/handbook.mjs setup",
+    "handbook:check": "node scripts/handbook.mjs check",
+    "handbook:doctor": "node scripts/handbook.mjs doctor",
+    "handbook:ready": "node scripts/handbook-integration.mjs check",
+    "handbook:sync": "node scripts/handbook-integration.mjs sync",
+    "handbook:entrypoints": "node scripts/handbook-integration.mjs check-entrypoints",
+    "handbook:templates": "node scripts/handbook-integration.mjs templates"
+  }
+}
