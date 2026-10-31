@@ -1,30 +1,20 @@
 # Shared infrastructure implementation plan
 
-Use the [three-phase runbook](operations.md) for execution and its single
-configuration/progress table. This plan separates first deployment from later
-consolidation. Phase 1 preparation is complete. October 25 operator output confirms
-plugin upgrades, restricted deployment account/control installation, the reviewed
-null-IPAM preflight repair, private runtime preparation and additive index setup.
-The first staging release and independent restricted check passed; final discovery
-found Booklet staging/production, Dify and legacy services at their expected baseline.
-Phase 3 staging acceptance and handoff are now verified: Google admin/session/profile
-and logout/re-login checks, operator-reported incognito email login/logout, workstation
-Actions/pinned SSH access and fresh runtime checks passed. The Cloudflare HTML
-rewriting/CSP hydration defect was corrected by Unibase's no-transform response,
-deployed and verified on fresh account/admin loads. Current release identity and
-evidence belong in operations; app details belong in its acceptance record.
-The optional AI runtime/control update is now installed and its staging release passed.
-Bounded Dify/MCP/Persona acceptance passed in Unibase, including persisted results
-and credit settlement; application evidence remains canonical in its deployment guide.
-Guided initialization has synthetic coverage, with fresh derived provider-write
-acceptance and secure-channel credential-storage confirmation still outstanding.
-Do not repeat completed bootstrap operations. The [operations status table](operations.md#configuration-and-progress)
-records current evidence. [Inventory](inventory/srv1.md) records the dated baseline.
+Use [host operations](operations.md) for the appropriate routine, first-installation,
+protected-update or recovery procedure. [Inventory](inventory/srv1.md) owns installed
+host identities and dated capacity; [Unibase's deployment guide](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md#current-staging-release)
+owns serving release identities and application acceptance.
+
+October 31 controller/maintenance installation, configuration correction and routine
+staging release/check are verified. Earlier October 25 account and Dify/MCP/Persona
+acceptance is historical evidence, not a fresh check of the current release. Dify
+functional acceptance for the corrected permissions remains pending. Guided initialization
+has synthetic coverage; fresh derived-provider write acceptance and secure-channel
+credential-storage confirmation remain outstanding.
 
 Completed bootstrap procedures are [historical references](history/completed-bootstrap-2026-10-25.md),
-not a pending checklist. The [preparation package](staging-preparation.md) preserves
-the reviewed Phase 1 scope; live status belongs in operations. Application acceptance
-belongs in Unibase's deployment guide. Avoid duplicating release IDs and test logs here.
+not a checklist to repeat. The [preparation package](staging-preparation.md) preserves
+the reviewed first-installation scope. Avoid duplicating release IDs and test logs here.
 
 ## First deployment
 
