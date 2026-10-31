@@ -52,10 +52,20 @@ def route(d,request):
     # Validate common identity using the legacy validator, with no caller command/path.
     d.validate_request(dict(version=2,project=project,environment=target,action='check',configurationHash='0'*64))
     allowed={'version','project','environment','action'}
-    extras={'capabilities':set(),'status':{'planId'},'plan':{'candidate','bundle'},'apply':{'planId','token'},'backup':{'backupId','destination'},'restore':{'backupId','destination'}}
+    extras={'capabilities':set(),'maintenance':set(),'status':{'planId'},'plan':{'candidate','bundle'},'apply':{'planId','token'},'backup':{'backupId','destination'},'restore':{'backupId','destination'}}
     if action not in extras or set(request)!=allowed|extras[action]:raise ValueError('INVALID_REQUEST')
     if action=='capabilities':return {'version':2,'capabilities':CAPABILITIES}
     with d.operation_lock(project) as fd:
+        if action == 'maintenance':
+            from image_maintenance import Maintenance, policy, lock, STATE
+            engine = Maintenance(policy())
+            with lock(STATE / 'image-maintenance.lock', 'UNIWARES_IMAGE_LOCK_FD'):
+                result = engine.preview(project)
+                previous = engine.apps / project / 'image-maintenance-status.json'
+                from image_maintenance import read
+                return {'version': 2, 'disk': result['disk'], 'snapshots': result['snapshots'],
+                        'protected': result['protected'],
+                        'lastMaintenance': read(previous) if previous.exists() else None}
         store=PlanStore(d.STATE/project/'operation-plans')
         if action=='status':
             result=store.status(request['planId'])

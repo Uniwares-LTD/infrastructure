@@ -39,6 +39,12 @@ def validate_request(request):
         raise ValueError('Invalid protocol')
     action = request.get('action')
     expected = required | ({'image', 'commit'} if action == 'deploy' else set())
+    if request['version'] == 2 and 'requiredCapabilities' in request:
+        capabilities = request['requiredCapabilities']
+        if not isinstance(capabilities, list) or len(capabilities) > 16 or any(
+                not isinstance(item, str) or not re.fullmatch(r'[a-z][a-z0-9-]{1,63}', item) for item in capabilities):
+            raise ValueError('Invalid capabilities')
+        expected.add('requiredCapabilities')
     if set(request) != expected or action not in ('deploy', 'check', 'rollback', 'preflight'):
         raise ValueError('Invalid operation')
     if request['environment'] not in (('staging',) if request['version'] == 1 else ('staging', 'prod')):
@@ -72,6 +78,14 @@ def installed_state(request):
     trusted(source)
     for path in source.rglob('*'):
         trusted(path)
+    if request.get('requiredCapabilities'):
+        try:
+            installed_contract = json.loads((source / 'deploy/contract.json').read_text())
+            if not set(request['requiredCapabilities']) <= set(installed_contract['requiredCapabilities']):
+                raise Rejection('UNSUPPORTED_CAPABILITY')
+            require_lock_capability(source)
+        except (OSError, ValueError, KeyError, TypeError):
+            raise Rejection('UNSUPPORTED_CAPABILITY') from None
     config = json.loads((source / ('deploy/environments/' + ('production' if request['environment'] == 'prod' else request['environment']) + '.json')).read_text())
     if json.loads((source / 'project.config.json').read_text())['slug'] != request['project']:
         raise Rejection('UNTRUSTED_CONTROL')
@@ -147,6 +161,21 @@ def require_lock_capability(source):
         raise Rejection('UNSUPPORTED_CAPABILITY') from None
     if contract.get('version') != 1 or 'operation-lock-v1' not in contract.get('requiredCapabilities', []):
         raise Rejection('UNSUPPORTED_CAPABILITY')
+    supported = {'operation-lock-v1', 'image-retention-v1'}
+    if not set(contract.get('requiredCapabilities', [])) <= supported:
+        raise Rejection('UNSUPPORTED_CAPABILITY')
+    if 'image-retention-v1' in contract['requiredCapabilities']:
+        try:
+            directory = Path(__file__).resolve().parent
+            trusted(directory)
+            sys.path.insert(0, str(directory))
+            from image_maintenance import policy, Maintenance
+            project = json.loads((source / 'project.config.json').read_text())['slug']
+            Maintenance(policy()).enrolled(project)
+            trusted(Path('/usr/local/sbin/uniwares-image-maintenance'))
+        except Exception:
+            raise Rejection('UNSUPPORTED_CAPABILITY') from None
+
 
 
 def record_operation(request, status):
@@ -179,7 +208,7 @@ def execute_with_lock(request, fd):
     source, _, _, _ = installed_state(request)
     require_lock_capability(source)
     args = command(request)
-    env = dict(ENV, UNIWARES_OPERATION_LOCK_FD=str(fd))
+    env = dict(ENV, UNIWARES_OPERATION_LOCK_FD=str(fd), UNIWARES_DISPATCHED='1')
     def interrupted(signum, frame):
         raise InterruptedError('Operation interrupted')
     previous = {sig: signal.signal(sig, interrupted) for sig in (signal.SIGTERM, signal.SIGINT)}
@@ -190,6 +219,22 @@ def execute_with_lock(request, fd):
                                    pass_fds=(fd,), start_new_session=True)
         status = process.wait(timeout=OPERATION_TIMEOUT)
         record_operation(request, 'completed' if status == 0 else 'failed')
+        if status == 0 and request['action'] in ('deploy', 'rollback') and 'image-retention-v1' in json.loads((source / 'deploy/contract.json').read_text()).get('requiredCapabilities', []):
+            # Readiness and the application ledger commit precede optional maintenance.
+            try:
+                from image_maintenance import Maintenance, policy, lock, STATE as maintenance_state
+                engine = Maintenance(policy())
+                if 'image-retention-v1' in json.loads((source / 'deploy/contract.json').read_text()).get('requiredCapabilities', []):
+                    with lock(maintenance_state / 'image-maintenance.lock', 'UNIWARES_IMAGE_LOCK_FD'):
+                        # The caller still owns fd; never acquire a second app lock.
+                        ledger = engine.ledger(request['project'])
+                        current = engine.releases / request['project'] / ('production' if request['environment'] == 'prod' else request['environment']) / 'current'
+                        if not any(x['snapshot'] == current.resolve().name for x in ledger['activations']):
+                            raise ValueError('RELEASE_LEDGER_MISSING')
+                        result = engine.cleanup(request['project'])
+                        print('maintenance=' + result['status'])
+            except Exception:
+                print('maintenance=warning operator-inspection-required')
         return status
     except BaseException:
         # Kill all descendants and reap before releasing the lock. Never retry blindly.
@@ -209,7 +254,7 @@ def execute_with_lock(request, fd):
 
 def handle(request):
     try:
-        if isinstance(request, dict) and type(request.get('version')) is int and request['version'] == 2 and request.get('action') in ('plan','apply','status','capabilities','backup','restore'):
+        if isinstance(request, dict) and type(request.get('version')) is int and request['version'] == 2 and request.get('action') in ('plan','apply','status','capabilities','maintenance','backup','restore'):
             directory = Path(__file__).resolve().parent
             trusted(directory)
             sys.path.insert(0,str(directory))

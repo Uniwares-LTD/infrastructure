@@ -31,3 +31,5 @@ confirmed selections. Applications retain their release/data ownership; Booklet,
 Dify and tunnel ownership remain as recorded in architecture.
 
 Deployment changes require configuration ownership classification and operator-impact reporting. The deployment/operations guide owns plan approval, status and recovery; contract changes require validation, update behavior and compatibility coverage.
+
+[Image maintenance](../scripts/image_maintenance.py) owns retention, disk checks and release-ledger protections. [Its operator installer](../scripts/install-image-maintenance.py) owns explicit policy and disabled timer installation. See [image retention](operations.md#image-retention) for rollout and recovery.

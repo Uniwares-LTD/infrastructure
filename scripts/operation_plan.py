@@ -9,7 +9,7 @@ import re
 import time
 
 ISSUER='https://token.actions.githubusercontent.com'
-CAPABILITIES=['operation-lock-v1','plans-v2','github-oidc-v1']
+CAPABILITIES=['operation-lock-v1','plans-v2','github-oidc-v1','image-retention-v1']
 OPERATIONS={'image-only':['deploy','check'], 'host-configuration':['configure','deploy','check'],
             'controller':['controller','check'], 'backup':['backup'], 'restore':['restore'], 'provider':[], 'data-migration':[]}
 

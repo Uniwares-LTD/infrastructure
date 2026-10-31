@@ -364,11 +364,110 @@ its consumers and preserving operator access.
 
 ## Image retention
 
-The October 24 inventory reports 84.23 GB of reclaimable images. First identify each app's
-active and retained rollback digests and whether they can be pulled again. Remove
-only explicitly selected obsolete images; record a small retention policy when
-implemented. Do not blanket-prune images/volumes across all projects. The last observed
-41 GiB free disk does not require emergency deletion to begin staging work.
+Source implementation is available; installation, deletion and timer activation remain
+separate operator actions. The October 31, 2026 user-supplied root readback reports
+154 GB total, 11 GB available (94% used), 135 GB under Docker and Docker's estimate
+of 111.5 GB reclaimable images. This supersedes the old 41 GiB observation.
+Reclaimable space is not a reviewed deletion list.
+
+### Policy and protection
+
+Infrastructure owns /etc/uniwares-infrastructure/image-retention.json and the fixed
+/usr/local/sbin/uniwares-image-maintenance command. The
+[example policy](../config/image-retention.example.json) enrolls only Unibase, maps
+staging/prod explicitly, and disables automatic cleanup. Derived-project proposals
+grant no enrollment. Other applications require their owners' explicit review.
+
+Retain three distinct successful snapshots per environment and fourteen days of
+activations. Rollback records another activation, not another distinct snapshot.
+Always protect current/previous selections, every running/stopped container reference,
+and unresolved operation plans. Prepared/failed plans never age out. Pending configuration
+recovery, unknown deployment state, corrupt state or uncertain ledger recording blocks
+deletion. Explicit legacy review overrides missing activation evidence only, never
+current/previous, container or pending-operation protection.
+
+Only allowlisted application references are eligible. Cross-repository references and
+unowned/dangling images are not removed. Private snapshots, controller predecessors,
+configuration backups, volumes and data remain untouched. Historical snapshots outside
+retention may require an image pull; status reports cached availability.
+
+### Initial cleanup and installation
+
+First obtain the privileged controller/registration/configuration/release readback and
+check pending journals under Initial trust and controller installation. Do not replay
+bootstrap. Transfer the reviewed image_maintenance.py, install-image-maintenance.py
+and policy from the exact reviewed Infrastructure revision. Prepare their exact paths
+and SHA-256 identities in the workstation handoff once that revision is fixed.
+
+The installer accepts --source, --sha256, --policy and optional
+--expected-policy-sha256. It previews by default; --apply installs the checksum-bound
+module, fixed command, policy and systemd units. Updating an existing changed policy
+requires its observed checksum. Standalone installation supports manual cleanup before
+controller replacement. No account/sudo changes are needed. Installation never starts
+or enables the timer or changes an existing timer's activation state.
+
+After authorized installation, run in the root Ubuntu session:
+
+~~~bash
+/usr/local/sbin/uniwares-image-maintenance preview unibase
+/usr/local/sbin/uniwares-image-maintenance status unibase
+~~~
+
+Preview saves /var/lib/unibase/image-maintenance-preview.json and returns its digest,
+candidate references, protection reasons, ownership inventory and filesystem measurements.
+Review the exact candidates before invoking apply unibase --digest with that digest.
+For explicitly reviewed legacy images, repeat preview with one --legacy-reference per
+immutable reference; the resulting digest binds those exceptions. Never blanket-prune,
+force removal or delete overlay2 directories directly.
+
+Manual apply removes only the reviewed candidate set. Each reference is revalidated
+against current containers, snapshots, plans and policy immediately before deletion.
+Changed state requires a new preview. Automatic cleanup stops once every checked
+filesystem has 30 GiB free; no protection is relaxed to meet that target. If free space
+remains below 20 GiB, stop release and use the ownership inventory to request other
+owners' cleanup or capacity expansion. Measure actual recovered space after deletion.
+
+### Deployment and timer
+
+Install compatible Infrastructure tooling/policy first, then the application control
+bundle declaring image-retention-v1. New requests bind required capabilities. Old
+clients remain supported but are not claimed to have retention protection.
+Both direct root and dispatcher paths acquire the application lock before the shared
+image lock and hold them through pull, readiness and release-ledger recording.
+
+Check Docker's actual data-root and release/state filesystems, deduplicated by device.
+Require 20 GiB free before pulling and again before container replacement; this floor
+does not guarantee that an arbitrarily large image fits. Warn at 80% usage. Failed
+pulls or low-space checks preserve the running release. A failed ledger/cleanup step
+reports maintenance separately and must not restore an otherwise healthy release.
+
+After manual cleanup and staging release verification, explicitly review a policy
+update enabling Unibase automatic cleanup, install it with the prior policy checksum,
+and obtain timer activation authorization before running:
+
+~~~bash
+systemctl enable --now uniwares-image-maintenance.timer
+systemctl list-timers uniwares-image-maintenance.timer
+~~~
+
+The daily timer runs at 03:00 UTC, with up to thirty minutes of jitter and persistent
+missed-run handling. The service has a ten-minute timeout and kills its control group.
+It processes enrolled applications individually, skips busy locks and uses the same
+implementation as post-release cleanup. Backups remain manual.
+
+### Failure and recovery
+
+status unibase, or the application command npm run deploy:ops -- maintenance staging,
+reports disk pressure, cached snapshots and the last maintenance outcome.
+Root-private image-maintenance-status.json records intent before removal and completion
+afterward. A timeout/disconnection means outcome unknown. Inspect current inventory
+and status, then create and approve a fresh preview; automatic retries stop on uncertainty.
+
+If image-ledger-pending.json exists, verify selected identity and readiness before
+using record unibase --environment staging (or prod) in the root session. Corrupt
+ledger or pending configuration recovery requires owner investigation, not deletion
+of blocker files. Command updates retain their predecessor; disable the timer before
+investigating repeated failures. Database restore is never image-cleanup recovery.
 
 ## Minimum staging backup and recovery
 

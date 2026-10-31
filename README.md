@@ -67,3 +67,7 @@ for one-time trust, immutable bundles, approvals, status and manual encrypted re
 For tests install `requirements-controller.txt` in a developer venv, then run the Python
 suite on Linux. These Python dependencies belong to controller verification/runtime;
 Handbook itself remains dependency-free developer tooling.
+
+## Image maintenance
+
+Infrastructure owns image retention. Start with the [preview, installation and recovery procedure](docs/operations.md#image-retention). Local verification uses `python3 -B -m unittest discover -s tests`; real image-deletion tests additionally require an explicitly disposable local Docker daemon and `RETENTION_DISPOSABLE_DOCKER=1`. No test contacts the VPS.

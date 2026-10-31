@@ -34,3 +34,5 @@ CLI lacks read:project. Repair access and verify before external tracking change
 local adoption does not enroll issues or change organization permissions.
 
 Deployment changes must classify image, host configuration, controller, provider or data impact. Report operator ordering, verification and failure/resume; unsupported requirements require a named owner action. Preserve session authority and separate publication from installation/live acceptance.
+
+Image-retention changes preserve app-then-image lock ordering, current/previous and unresolved-plan protection, root-owned enrollment and separate maintenance outcomes. Preview and operator authorization precede live deletion; timer installation does not authorize activation.
