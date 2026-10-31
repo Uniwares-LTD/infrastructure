@@ -350,7 +350,7 @@ class Maintenance:
         cutoff = now - self.config['keepDays'] * 86400
         known = {(x['environment'], x['snapshot'], x['image'], x['commit']) for x in ledger}
         for environment in self.enrolled(project)['environments']:
-            history = sorted((x for x in ledger if x['environment'] == environment),
+            history = sorted((x for x in reversed(ledger) if x['environment'] == environment),
                              key=lambda x: x['activatedAt'], reverse=True)
             seen = set()
             for entry in history:
@@ -469,7 +469,7 @@ class Maintenance:
             fail('MAINTENANCE_PLAN_CHANGED')
         status_path = self.apps / project / 'image-maintenance-status.json'
         result = {'version': 1, 'status': 'running', 'previewDigest': preview['digest'],
-                  'removed': [], 'active': None, 'before': self.disk(project)}
+                  'removed': [], 'alreadyAbsent': [], 'active': None, 'before': self.disk(project)}
         atomic(status_path, result)
         for candidate in plan['candidates']:
             if automatic and all(x['freeBytes'] >= self.config['targetFreeGiB'] * GIB for x in self.disk(project)):
@@ -477,6 +477,13 @@ class Maintenance:
             # Re-read containers, selections, journals, ledger and references for each deletion.
             available = self.preview(project, plan['legacyReferences'])['plan']['candidates']
             if candidate not in available:
+                # Docker may remove digest aliases with the final tag. Confirm
+                # absence rather than treating our own completed removal as a race.
+                images, _ = self.docker.inventory()
+                if not any(candidate['reference'] in x['references'] for x in images):
+                    result['alreadyAbsent'].append(candidate)
+                    atomic(status_path, result)
+                    continue
                 result.update(status='replan-required', active=None)
                 atomic(status_path, result)
                 return result

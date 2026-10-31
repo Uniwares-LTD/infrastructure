@@ -176,6 +176,26 @@ class RetentionTests(unittest.TestCase):
         self.assertEqual(result['status'], 'completed')
         self.assertEqual(self.docker.removed, [image(1), image(2)])
 
+    def test_docker_removing_digest_alias_with_tag_is_completed(self):
+        for n in range(1, 5):
+            self.release(n, age=40-n)
+        self.docker.images[0]['references'].append(REPO + ':old')
+        def remove_all(reference):
+            self.docker.removed.append(reference)
+            self.docker.images = [x for x in self.docker.images if reference not in x['references']]
+        self.docker.remove = remove_all
+        result = self.engine.apply('app', self.engine.preview('app'))
+        self.assertEqual(result['status'], 'completed')
+        self.assertEqual(len(result['removed']), 1)
+        self.assertEqual(len(result['alreadyAbsent']), 1)
+
+    def test_status_remains_available_with_pending_recovery(self):
+        (self.root / 'apps/app/config-update-pending').mkdir()
+        result = self.engine.status('app')
+        self.assertEqual(result['protection'], 'blocked')
+        self.assertEqual(result['code'], 'PENDING_CONFIGURATION_RECOVERY')
+        self.assertIn('disk', result)
+
     def test_timeout_retains_unknown_and_blocks_automatic_retry(self):
         for n in range(1, 5):
             self.release(n, age=40-n)

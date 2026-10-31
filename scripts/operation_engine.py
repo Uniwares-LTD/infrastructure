@@ -61,7 +61,20 @@ def route(d,request):
             engine = Maintenance(policy())
             with lock(STATE / 'image-maintenance.lock', 'UNIWARES_IMAGE_LOCK_FD'):
                 engine.config = policy()
-                return engine.status(project)
+                result = engine.status(project)
+                # The restricted client has a 64 KiB response budget; full root-only
+                # previews retain reference lists and cross-owner inventory.
+                result.pop('ownershipInventory', None)
+                counts = {}
+                for item in result.pop('protected', []):
+                    for reason in item['reasons']:
+                        counts[reason] = counts.get(reason, 0) + 1
+                result['protectedCounts'] = counts
+                snapshots = result.get('snapshots', [])
+                selected = [x for x in snapshots if x['selected']]
+                recent = snapshots[-20:]
+                result['snapshots'] = selected + [x for x in recent if x not in selected]
+                return result
         store=PlanStore(d.STATE/project/'operation-plans')
         if action=='status':
             result=store.status(request['planId'])
