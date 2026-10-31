@@ -1,0 +1,48 @@
+name: Apply deployment plan
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: Enrolled application slug
+        required: true
+        type: string
+      environment:
+        required: true
+        type: choice
+        options: [staging, prod]
+      plan_id:
+        description: Exact prepared plan ID
+        required: true
+        type: string
+      plan_digest:
+        description: SHA-256 digest verified during plan review
+        required: true
+        type: string
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: approved-plan-${{ inputs.project }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Require main and exact reviewed digest
+        env:
+          PLAN_ID: ${{ inputs.plan_id }}
+          PLAN_DIGEST: ${{ inputs.plan_digest }}
+        run: |
+          [[ "$GITHUB_REF" == refs/heads/main ]]
+          [[ "$PLAN_ID" =~ ^[a-f0-9]{64}$ && "$PLAN_ID" == "$PLAN_DIGEST" ]]
+  apply:
+    needs: validate
+    uses: Uniwares-LTD/infrastructure/.github/workflows/apply-plan-executor.yml@00bf4d8353ddfbf8deaa38db22f040c9d948750f
+    with:
+      project: ${{ inputs.project }}
+      environment: ${{ inputs.environment }}
+      plan_id: ${{ inputs.plan_id }}
+    secrets:
+      DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+      DEPLOY_SSH_HOST_KEY: ${{ secrets.DEPLOY_SSH_HOST_KEY }}
