@@ -91,6 +91,16 @@ def install_locked(archive,checksum,expected,trust=None):
         validate_trust(trust);TRUST.parent.mkdir(parents=True,mode=0o700,exist_ok=True)
         if TRUST.exists() and json.loads(TRUST.read_text())!=trust:raise ValueError('TRUST_CHANGE_REQUIRES_SEPARATE_REVIEW')
         atomic(TRUST,trust)
+    # Keep the installed maintenance command on the same reviewed controller version.
+    maintenance = destination / 'scripts/image_maintenance.py'
+    if maintenance.exists() and Path('/usr/local/sbin/uniwares-image-maintenance').exists():
+        import importlib.util
+        import sys
+        sys.path.insert(0, str(destination / 'scripts'))
+        spec = importlib.util.spec_from_file_location('maintenance_install', destination / 'scripts/install-image-maintenance.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        module.install_command(maintenance)
     previous=DISPATCHER.with_name(DISPATCHER.name+'.previous-'+expected)
     if not previous.exists():shutil.copyfile(DISPATCHER,previous);previous.chmod(0o700)
     wrapper=('#!'+str(destination/'venv/bin/python')+' -I\nimport runpy\nrunpy.run_path('+repr(str(destination/'scripts/deploy-dispatch.py'))+',run_name="__main__")\n').encode()

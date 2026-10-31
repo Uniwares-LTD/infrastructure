@@ -14,3 +14,6 @@ jobs:
         run: python3 -m pip install -r requirements-controller.txt
       - name: Run controller tests
         run: python3 -B -m unittest discover -s tests -v
+
+      - name: Verify root-owned locking and real Docker image retention
+        run: sudo env RETENTION_DISPOSABLE_DOCKER=1 python3 -B -m unittest discover -s tests -p 'test_image_maintenance*.py' -v

@@ -104,3 +104,28 @@ class PreflightTests(unittest.TestCase):
         parent = SimpleNamespace(lstat=lambda: SimpleNamespace(st_mode=stat.S_IFDIR | 0o777, st_uid=0))
         path = SimpleNamespace(parents=[parent], lstat=lambda: SimpleNamespace(st_mode=stat.S_IFREG | 0o600, st_uid=0))
         with self.assertRaises(d.Rejection): TRUSTED(path)
+
+    def test_requested_retention_rejects_old_bundle_without_executing(self):
+        contract = self.source / 'deploy/contract.json'
+        contract.write_text(json.dumps({'version': 1, 'requiredCapabilities': ['operation-lock-v1']}))
+        request = dict(self.request, version=2, requiredCapabilities=['operation-lock-v1', 'image-retention-v1'])
+        with patch.object(d.subprocess, 'run') as execute:
+            status, value = self.call(request)
+            self.assertEqual(status, 2)
+            self.assertEqual(value['code'], 'UNSUPPORTED_CAPABILITY')
+            execute.assert_not_called()
+        # Existing clients remain supported and do not silently claim the new capability.
+        request.pop('requiredCapabilities')
+        self.assertEqual(self.call(request)[1]['code'], 'COMPATIBLE')
+
+    def test_new_bundle_enrollment_required_and_capability_rechecked(self):
+        import image_maintenance as maintenance
+        contract = self.source / 'deploy/contract.json'
+        contract.write_text(json.dumps({'version': 1, 'requiredCapabilities': ['operation-lock-v1', 'image-retention-v1']}))
+        request = dict(self.request, version=2, requiredCapabilities=['operation-lock-v1', 'image-retention-v1'])
+        with patch.object(maintenance, 'policy', return_value={'projects': {'unibase': {}}}):
+            self.assertEqual(self.call(request)[1]['code'], 'COMPATIBLE')
+            contract.write_text(json.dumps({'version': 1, 'requiredCapabilities': ['operation-lock-v1']}))
+            with self.assertRaises(d.Rejection) as error:
+                d.command(dict(request, action='deploy', image='ghcr.io/test/unibase@sha256:'+'d'*64, commit='e'*40))
+            self.assertEqual(error.exception.code, 'UNSUPPORTED_CAPABILITY')

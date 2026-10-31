@@ -132,3 +132,7 @@ Linux synthetic integration covers archive/updater/dispatcher, contention, appro
 and recovery boundaries. Actual emitted GitHub OIDC claims, protected readback,
 controller installation, off-host restore rehearsal and live release acceptance remain
 rollout verification, not source-test claims. See operations.md for ordered procedures.
+
+## Accepted image retention and disk protection ? 2026-10-31
+
+The accepted implementation adds explicit Unibase enrollment, three-release/fourteen-day protection, a 20 GiB pre-pull minimum, 30 GiB cleanup target and 80% usage warnings. Verification and separate read-only review precede publication. Privileged readback, exact initial cleanup approval, installation, staging release and timer activation remain separate live steps. See [the canonical procedure](operations.md#image-retention). Issue-ready outcomes: Infrastructure retention/controller tooling; related Unibase release and initializer integration. No issues created or tracking permissions changed.

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "keepReleases": 3,
+  "keepDays": 14,
+  "minimumFreeGiB": 20,
+  "targetFreeGiB": 30,
+  "warnUsedPercent": 80,
+  "projects": {
+    "unibase": {
+      "imageRepository": "ghcr.io/uniwares-ltd/unibase",
+      "environments": {
+        "staging": "staging",
+        "prod": "production"
+      },
+      "automatic": false
+    }
+  }
+}
