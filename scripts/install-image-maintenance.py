@@ -131,4 +131,3 @@ if __name__ == '__main__':
         main()
     except Exception:
         raise SystemExit('Maintenance installation stopped; inspect reviewed source/policy identities.') from None
-

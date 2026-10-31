@@ -314,4 +314,3 @@ class RealLockTests(unittest.TestCase):
             link.symlink_to(real)
             with self.assertRaises(m.MaintenanceError):
                 m.read(link)
-

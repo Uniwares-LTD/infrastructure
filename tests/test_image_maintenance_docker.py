@@ -167,4 +167,3 @@ class DockerIntegrationTests(unittest.TestCase):
             server.shutdown()
             server.server_close()
             thread.join(timeout=5)
-

@@ -62,4 +62,3 @@ class InstallerTests(unittest.TestCase):
             config.write_text(json.dumps(changed))
             with self.assertRaisesRegex(m.MaintenanceError, 'EXPECTED_POLICY_CHECKSUM_REQUIRED'):
                 invoke(['--apply'])
-

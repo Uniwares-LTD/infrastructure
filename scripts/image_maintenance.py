@@ -631,4 +631,3 @@ if __name__ == '__main__':
     except Exception:
         print(json.dumps({'status': 'unknown', 'code': 'MAINTENANCE_INTERNAL_FAILURE'}))
         sys.exit(1)
-
