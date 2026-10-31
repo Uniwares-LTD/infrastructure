@@ -67,3 +67,17 @@
 - `main` is this repository's default branch. Application release branches and
   environment names belong to their own contracts; do not copy Booklet's `master`
   convention into Unibase.
+
+## Shared Handbook
+
+Run `npm run handbook:check` (or `node scripts/handbook.mjs check`) at task start.
+Read the returned committed bootstrap/work policy and relevant skills with git show.
+Use [.agents/repository-adapter.md](.agents/repository-adapter.md),
+[docs/source-map.md](docs/source-map.md), preferences and selected skills in handbook.json.
+Follow shared GitHub access routing: plain Git, working capable MCP, then gh.
+Run Git/gh and helpers that invoke them outside the sandbox from the first attempt.
+Cached guidance is usable; preserve non-main or dirty Handbook checkouts. No version
+pin or scheduler is installed. Carry the task baseline through handoffs.
+After skill/routing changes explicitly run handbook:sync and handbook:entrypoints;
+preserve custom instructions. Use project-owned permissive templates in .github and
+docs/templates. Adoption never authorizes publication or live host changes.

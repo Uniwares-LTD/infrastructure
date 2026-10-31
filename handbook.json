@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "kind": "consumer",
+  "guidance": ".agents/repository-adapter.md",
+  "sourceMap": "docs/source-map.md",
+  "preferences": ".agents/repository.md",
+  "tracking": ".agents/tracking.json",
+  "technologySkills": []
+}

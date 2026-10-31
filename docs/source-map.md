@@ -1,0 +1,33 @@
+# Infrastructure source map
+
+## Components
+
+[Scripts](../scripts) own restricted dispatch, control-bundle construction, bootstrap,
+configuration update and bounded discovery. [Tests](../tests) use disposable fixtures.
+
+## Documentation
+
+[README](../README.md) owns workstation setup; [architecture](architecture.md) owns
+boundaries; [inventory](inventory/srv1.md) owns dated host facts; [operations](operations.md)
+owns installation and release evidence. [Implementation plan](implementation-plan.md)
+retains accepted milestones. [Provider access](provider-access.md) owns credential references.
+
+## Commands
+
+[package.json](../package.json) owns Handbook commands. Run Python's unittest discovery
+against tests for control behavior. See [README](../README.md) for prerequisites.
+
+## Generated areas
+
+Handbook skill/client entrypoints and command safeguards are explicitly synchronized.
+Caches, private configuration and operator bundles are not source. Templates copied
+into .github and docs/templates become project-owned.
+
+## Ownership
+
+[Repository adapter](../.agents/repository-adapter.md) preserves local authority;
+[preferences](../.agents/repository.md) and [tracking](../.agents/tracking.json) record
+confirmed selections. Applications retain their release/data ownership; Booklet,
+Dify and tunnel ownership remain as recorded in architecture.
+
+Deployment changes require configuration ownership classification and operator-impact reporting. The deployment/operations guide owns plan approval, status and recovery; contract changes require validation, update behavior and compatibility coverage.

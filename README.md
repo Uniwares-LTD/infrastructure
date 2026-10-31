@@ -35,3 +35,35 @@ here does not transfer Terraform state, credentials or service ownership.
 
 Shared host facts belong here. Application behavior belongs in its application
 repository. Link to canonical documents rather than copying an operational inventory.
+
+## Developer tooling and Handbook
+
+Requires Python 3 for tests, and Node.js 22+ plus Git for Handbook tooling.
+No npm dependencies or Node installation on the managed host are required.
+Use `npm.cmd` on Windows when PowerShell wrappers are blocked.
+
+Run `npm run handbook:setup`, then `npm run handbook:check` / `npm run handbook:doctor`.
+The shared checkout follows main lazily; preserve existing work branches and use the
+recorded task snapshot for explicit synchronization. `handbook:ready` is offline.
+Run `node scripts/handbook.mjs resources --revision SHA` with the task's returned SHA,
+then `npm run handbook:sync -- --source SNAPSHOT` and
+`npm run handbook:entrypoints -- --source SNAPSHOT` with its returned resourcePath.
+Run `python -m unittest discover -s tests` for control behavior.
+
+Adoption uses the eight core workflow skills and no frontend technology skills.
+Local guidance lives in the [adapter](.agents/repository-adapter.md) and
+[source map](docs/source-map.md). Tracking selects Uniwares #2; live project validation
+is pending read:project access. No project, issue, permission or host change is implied.
+Bootstrap tooling was copied from Handbook revision
+`68114406d21c7f811281503970f7982d73239c0c`; this is provenance, not a version pin.
+
+
+## Deployment operations
+
+Applications expose doctor/plan/status/check/rollback/backup/restore through their thin
+command entrypoint. Infrastructure owns installed operations and the **Apply deployment
+plan** approval workflow. Start with the [approved-plan runbook](docs/operations.md#approved-plan-operations)
+for one-time trust, immutable bundles, approvals, status and manual encrypted recovery.
+For tests install `requirements-controller.txt` in a developer venv, then run the Python
+suite on Linux. These Python dependencies belong to controller verification/runtime;
+Handbook itself remains dependency-free developer tooling.
