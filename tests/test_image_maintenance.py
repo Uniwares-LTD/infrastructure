@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import subprocess
 import tempfile
 import time
 import unittest
@@ -275,6 +276,35 @@ class RealLockTests(unittest.TestCase):
                     m.verify_fd(fd, path)
                 finally:
                     os.close(fd)
+
+    def test_direct_supervisor_reaps_writer_on_interrupt(self):
+        with tempfile.TemporaryDirectory(dir='/root') as directory:
+            root = Path(directory)
+            marker = root/'writer.pid'
+            writer = 'import os,time;open('+repr(str(marker))+',"w").write(str(os.getpid()));time.sleep(30)'
+            supervisor = ('import sys;sys.path.insert(0,'+repr(str(Path(m.__file__).parent))+');'
+                          'import image_maintenance as m;'
+                          'm.supervise(['+repr(sys.executable)+',"-c",'+repr(writer)+'],int(sys.argv[1]),int(sys.argv[2]))')
+            with m.lock(root/'app.lock', 'TEST_APP_FD') as app_fd:
+                with m.lock(root/'image.lock', 'TEST_IMAGE_FD') as image_fd:
+                    child = subprocess.Popen([sys.executable, '-c', supervisor, str(app_fd), str(image_fd)],
+                        pass_fds=(app_fd, image_fd), stderr=subprocess.DEVNULL)
+                    try:
+                        deadline = time.monotonic()+5
+                        while not marker.exists() and time.monotonic()<deadline:
+                            time.sleep(.02)
+                        self.assertTrue(marker.exists())
+                        writer_pid = int(marker.read_text())
+                        child.terminate()
+                        child.wait(timeout=5)
+                        with self.assertRaises(ProcessLookupError):
+                            os.kill(writer_pid, 0)
+                        m.verify_fd(app_fd, root/'app.lock')
+                        m.verify_fd(image_fd, root/'image.lock')
+                    finally:
+                        if child.poll() is None:
+                            child.kill()
+                        child.wait(timeout=5)
 
     def test_untrusted_symlink(self):
         with tempfile.TemporaryDirectory(dir='/root') as directory:

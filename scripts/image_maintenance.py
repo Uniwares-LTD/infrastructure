@@ -432,10 +432,12 @@ class Maintenance:
         plan = {'version': 1, 'project': project, 'policyDigest': digest(self.config),
                 'candidates': sorted(candidates, key=lambda x: x['reference']),
                 'legacyReferences': sorted(requested)}
+        selected_snapshots = [x for x in snapshots if x['selected']]
+        reported_snapshots = selected_snapshots + [x for x in snapshots[-100:] if x not in selected_snapshots]
         return {'plan': plan, 'digest': digest(plan), 'protected': skipped,
                 'disk': self.disk(project),
                 'ownershipInventory': [{'repository': k, 'images': len(v)} for k, v in sorted(ownership.items())],
-                'snapshots': [{**x, 'cached': x['image'] in local} for x in snapshots][-100:]}
+                'snapshots': [{**x, 'cached': x['image'] in local} for x in reported_snapshots]}
 
     def status(self, project):
         self.enrolled(project)

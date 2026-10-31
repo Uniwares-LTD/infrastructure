@@ -64,7 +64,10 @@ def replace(path, content, mode):
             os.unlink(temporary)
 
 
-def install_command(source):
+def install_command(source, locked=False):
+    if not locked:
+        with lock(STATE / 'image-maintenance.lock', 'UNIWARES_IMAGE_LOCK_FD'):
+            return install_command(source, locked=True)
     trusted(source)
     body = ("#!/usr/bin/python3 -I\nimport runpy\nrunpy.run_path(" +
             repr(str(source)) + ",run_name='__main__')\n").encode()
@@ -116,7 +119,7 @@ def main():
         STATE.mkdir(parents=True, mode=0o700, exist_ok=True)
         POLICY.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
         replace(POLICY, args.policy.read_bytes(), 0o600)
-        install_command(installed)
+        install_command(installed, locked=True)
         for name, value in [('service', SERVICE), ('timer', TIMER)]:
             replace(UNITS / ('uniwares-image-maintenance.' + name), value.encode(), 0o644)
         subprocess.run(['systemctl', 'daemon-reload'], check=True)
