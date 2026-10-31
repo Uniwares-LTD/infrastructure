@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import tempfile
 from operation_plan import prepare, verify_token, hex_value, digest, CAPABILITIES
-from operation_store import PlanStore, atomic
+from operation_store import PlanStore, atomic, RetryableOperationFailure
 
 TRUST=Path('/etc/uniwares-infrastructure/approval-trust.json')
 MAX_BUNDLE=32*1024*1024
@@ -165,7 +165,7 @@ class Executor:
 
     def configured(self,plan):
         _,_,observed=state(self.d,plan['project'],plan['environment'])
-        return observed['installedRevision']==plan['bundleChecksum'] and observed['configurationHash']==plan['configurationHash']
+        return observed['installedRevision']==plan['bundleChecksum'] and observed['configurationHash']==plan['configurationHash'] and observed.get('releaseIdentity')==plan['expected'].get('releaseIdentity')
 
     def configure(self,plan):
         d=self.d
@@ -201,11 +201,18 @@ class Executor:
         return request
 
     def deploy(self,plan):
-        if self.d.execute_with_lock(self.request('deploy'),self.fd):raise ValueError('DEPLOYMENT_FAILED')
+        if self.d.execute_with_lock(self.request('deploy'),self.fd):
+            observed=state(self.d,plan['project'],plan['environment'])[2]
+            # Known nonzero exit is retryable only after the prior selected image is
+            # proven healthy. Timeout/interruption exceptions never enter this path.
+            prior=plan['expected'].get('releaseIdentity')
+            if prior and observed.get('releaseIdentity')==prior and self.d.execute_with_lock(self.request('check'),self.fd)==0:
+                raise RetryableOperationFailure('DEPLOYMENT_FAILED_PREVIOUS_RELEASE_VERIFIED')
+            raise ValueError('READBACK_REQUIRED')
         return state(self.d,plan['project'],plan['environment'])[2]
 
     def check(self,plan):
-        if self.d.execute_with_lock(self.request('check'),self.fd):raise ValueError('READINESS_FAILED')
+        if self.d.execute_with_lock(self.request('check'),self.fd):raise RetryableOperationFailure('READINESS_FAILED')
         return state(self.d,plan['project'],plan['environment'])[2]
 
     def deployed(self,plan):

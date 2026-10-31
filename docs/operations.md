@@ -560,7 +560,9 @@ Application `deploy:ops status TARGET --plan-id DIGEST` reports sanitized checkp
 Lost SSH, timeout or interruption means unknown until inspection. Deployment subprocess
 groups are terminated/reaped before releasing the lock; recovery subprocesses have
 bounded waits and the same cleanup. No automatic database restoration occurs.
-Application rollback restores its retained release snapshot. Protected host-runtime
+A known deployment failure can resume only after the prior selected release is proven
+healthy; completed configuration checkpoints are reused. Other uncertain writes require
+operator readback. Application rollback restores its retained release snapshot. Protected host-runtime
 predecessors remain at config-previous-CHECKSUM for explicit operator recovery; inspect
 the journal and installed/serving identities before choosing a recovery direction.
 Do not retry an uncertain provider write or manually delete replay records.

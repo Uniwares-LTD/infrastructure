@@ -7,6 +7,10 @@ import tempfile
 from operation_plan import canonical, digest, hex_value
 
 
+class RetryableOperationFailure(ValueError):
+    """Fixed executor proved no uncertain write remains before allowing a retry."""
+
+
 def atomic(path,value):
     fd,temp=tempfile.mkstemp(prefix='.operation-',dir=path.parent)
     try:
@@ -82,10 +86,16 @@ class PlanStore:
             if name in journal['completed']: continue
             journal.update(status='unknown',active=name)
             atomic(self.path(identity,'.journal.json'),journal)
-            result=executors[name](plan)
+            try:
+                result=executors[name](plan)
+            except RetryableOperationFailure:
+                journal.update(status='failed',active=None,failedOperation=name)
+                atomic(self.path(identity,'.journal.json'),journal)
+                raise
             journal['completed'].append(name);journal['active']=None
             if result is not None: journal['expectedAfter']=result
             atomic(self.path(identity,'.journal.json'),journal)
+        journal.pop('failedOperation',None)
         journal['status']='completed'
         atomic(self.path(identity,'.journal.json'),journal)
         return journal
