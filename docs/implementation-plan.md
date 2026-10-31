@@ -1,30 +1,20 @@
 # Shared infrastructure implementation plan
 
-Use the [three-phase runbook](operations.md) for execution and its single
-configuration/progress table. This plan separates first deployment from later
-consolidation. Phase 1 preparation is complete. October 25 operator output confirms
-plugin upgrades, restricted deployment account/control installation, the reviewed
-null-IPAM preflight repair, private runtime preparation and additive index setup.
-The first staging release and independent restricted check passed; final discovery
-found Booklet staging/production, Dify and legacy services at their expected baseline.
-Phase 3 staging acceptance and handoff are now verified: Google admin/session/profile
-and logout/re-login checks, operator-reported incognito email login/logout, workstation
-Actions/pinned SSH access and fresh runtime checks passed. The Cloudflare HTML
-rewriting/CSP hydration defect was corrected by Unibase's no-transform response,
-deployed and verified on fresh account/admin loads. Current release identity and
-evidence belong in operations; app details belong in its acceptance record.
-The optional AI runtime/control update is now installed and its staging release passed.
-Bounded Dify/MCP/Persona acceptance passed in Unibase, including persisted results
-and credit settlement; application evidence remains canonical in its deployment guide.
-Guided initialization has synthetic coverage, with fresh derived provider-write
-acceptance and secure-channel credential-storage confirmation still outstanding.
-Do not repeat completed bootstrap operations. The [operations status table](operations.md#configuration-and-progress)
-records current evidence. [Inventory](inventory/srv1.md) records the dated baseline.
+Use [host operations](operations.md) for the appropriate routine, first-installation,
+protected-update or recovery procedure. [Inventory](inventory/srv1.md) owns installed
+host identities and dated capacity; [Unibase's deployment guide](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md#current-staging-release)
+owns serving release identities and application acceptance.
+
+October 31 controller/maintenance installation, configuration correction and routine
+staging release/check are verified. Earlier October 25 account and Dify/MCP/Persona
+acceptance is historical evidence, not a fresh check of the current release. Dify
+functional acceptance for the corrected permissions remains pending. Guided initialization
+has synthetic coverage; fresh derived-provider write acceptance and secure-channel
+credential-storage confirmation remain outstanding.
 
 Completed bootstrap procedures are [historical references](history/completed-bootstrap-2026-10-25.md),
-not a pending checklist. The [preparation package](staging-preparation.md) preserves
-the reviewed Phase 1 scope; live status belongs in operations. Application acceptance
-belongs in Unibase's deployment guide. Avoid duplicating release IDs and test logs here.
+not a checklist to repeat. The [preparation package](staging-preparation.md) preserves
+the reviewed first-installation scope. Avoid duplicating release IDs and test logs here.
 
 ## First deployment
 
@@ -82,8 +72,9 @@ covers a concrete reviewed scope; unexpected destructive changes require reasses
   treating staging data as recoverable; backup before destructive changes/migrations.
 - [ ] Rehearse image/config rollback when a real compatible previous release exists;
   do not create a release solely to satisfy a runbook checkpoint.
-- [ ] Define image retention before selective cleanup. Evaluate legacy public gateway,
-  Dify/tunnel ownership transfers, Engine upgrades and production separately.
+- [x] Implement Unibase image retention and verify the authorized initial cleanup.
+- [ ] Activate automatic policy/timer only after the separate acceptance and authorization.
+- [ ] Evaluate legacy public gateway, Dify/tunnel ownership transfers, Engine upgrades and production separately.
 
 ## Remaining decisions
 
@@ -91,7 +82,7 @@ First-deployment preparation has selected the dispatcher, existing provider bind
 hostname, private listener and candidate subnet/Compose versions; see the preparation
 package. Root installation, Compose/Buildx compatibility, provider writes and the
 owner route are verified. Application release/acceptance evidence belongs to the
-operations progress table; do not infer live health from successful preparation.
+application deployment guide; do not infer live health from successful preparation.
 
 For later work: shared network/gateway design, shared Redis location/database allocation,
 job endpoint/timer interfaces, off-host destination/retention/encryption recovery and
@@ -116,8 +107,9 @@ reviewed revision 68114406d21c7f811281503970f7982d73239c0c without changing that
 
 Preflight code and synthetic checks do not certify installed host behavior. Follow
 [deployment preflight](operations.md#deployment-preflight) for compatibility rollout
-and pending protected readback. Dispatcher installation, permission-profile update,
-application publication/release and live acceptance are separate pending operations.
+and the protected readback. Controller installation, permission-profile update and
+staging release/check are verified on October 31. Dify functional and approved-plan
+OIDC acceptance remain pending; see the host inventory and application release record.
 
 ## Accepted repeatable deployment implementation
 
@@ -129,10 +121,15 @@ activated. Admin enrollment uses the selected existing team's numeric IDs. No is
 project access or organization permissions were changed.
 
 Linux synthetic integration covers archive/updater/dispatcher, contention, approvals
-and recovery boundaries. Actual emitted GitHub OIDC claims, protected readback,
-controller installation, off-host restore rehearsal and live release acceptance remain
-rollout verification, not source-test claims. See operations.md for ordered procedures.
+and recovery boundaries. Controller installation and routine staging release/check are verified. Actual emitted
+GitHub OIDC claims, off-host restore rehearsal and protected-plan live acceptance remain
+rollout checks, not source-test claims. See operations.md for ordered procedures.
 
 ## Accepted image retention and disk protection ? 2026-10-31
 
-The accepted implementation adds explicit Unibase enrollment, three-release/fourteen-day protection, a 20 GiB pre-pull minimum, 30 GiB cleanup target and 80% usage warnings. Verification and separate read-only review precede publication. Privileged readback, exact initial cleanup approval, installation, staging release and timer activation remain separate live steps. See [the canonical procedure](operations.md#image-retention). Issue-ready outcomes: Infrastructure retention/controller tooling; related Unibase release and initializer integration. No issues created or tracking permissions changed.
+The accepted implementation adds explicit Unibase enrollment, three-release/fourteen-day protection, a 20 GiB pre-pull minimum, 30 GiB cleanup target and 80% usage warnings. Verification and separate read-only review precede publication. Privileged readback, the authorized one-time cleanup, installation and staging release/check are verified. Automatic policy/timer activation remains pending and separately authorized. See [the canonical procedure](operations.md#image-retention). Issue-ready outcomes: Infrastructure retention/controller tooling; related Unibase release and initializer integration. No issues created or tracking permissions changed.
+
+
+## Documentation reconciliation — 2026-10-31
+
+Installed host identities and capacity are canonical in [inventory](inventory/srv1.md#installed-control-and-capacity--2026-10-31); application release/check identities and acceptance are in [Unibase](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md#current-staging-release). Controller/maintenance installation, configuration correction and routine staging release/check are complete. Remaining: real OIDC approval-path acceptance, recovery configuration/rehearsal, automatic policy/timer activation, production activation and read:project verification. Documentation publication requires no host action.

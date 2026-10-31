@@ -1,8 +1,46 @@
 # srv1 inventory
 
-Observed **2026-10-22**, from two operator-supplied read-only command outputs.
+Original discovery observed **2026-10-22**, with subsequent dated evidence below.
 This is a sanitized snapshot, not an ongoing health guarantee. No SSH credential
 was supplied and no host change was performed during this discovery.
+
+## Installed control and capacity — 2026-10-31
+
+These are user-supplied root-session observations and linked workflow evidence, not
+continuous health monitoring. The older discovery tables below retain their own dates.
+
+| Host-controlled identity | Verified value |
+| --- | --- |
+| Infrastructure source | `cc045864386f6ca6ba92600f238223431f4d1aba` |
+| Controller bundle checksum | `e991382e623f1a285ac895fbe31994765bf007af6ea822a0ad67a85c57cae71f` |
+| Installed dispatcher checksum | `4404fb361f9e99c43c58061202ed8fed16caa5d705fb0c52b48d08a1ac26731a` |
+| Application control source | `594f9c816e16ce02077892a7a0e9abc29e57999d` |
+| Installed Unibase control bundle | `8304d73b1b85428c52a1bed38452faf392055bdbb7fd023190ed7e7fe9c49869` |
+| Installed staging configuration hash | `3be35b4456ec3086cb65ed82bc8a8bc3ecd7d634fc0dabaebae5974dce2f0d1c` |
+| Controller capabilities | `operation-lock-v1`, `plans-v2`, `github-oidc-v1`, `image-retention-v1` |
+| Configuration recovery journal | Absent after verified update |
+| Approval trust | Installed from the reviewed explicit Admin enrollment; live OIDC approval-path acceptance remains pending |
+| Maintenance | Unibase only; `automatic: false`; timer disabled/inactive |
+
+Before cleanup, `/` reported 154 GB total, 11 GB available and 94% usage. The owner-authorized
+one-time Booklet cleanup removed 93 image references older than 72 hours while protecting
+container references and current/previous releases. Afterwards `/` reported 29 GB used,
+126 GB available and 19% usage; Docker reported 37 images, 25 active, and 14.98 GB image
+storage. Container and volume counts were unchanged. This did not enroll Booklet or
+change the Unibase three-release/14-day retention policy.
+
+The later pre-release check measured 135085899776 free bytes (125.8 GiB), 18.28% usage
+on Docker's `/var/lib/docker` filesystem and no pressure warning. These measurements
+precede the release; recheck before another capacity-sensitive operation.
+
+The installer initially stopped because `python3.12-venv` was missing; the dispatcher
+remained unchanged. Installing that package plus its pip/setuptools wheel dependencies
+allowed the same immutable installation to resume. No containers needed restart;
+a pending kernel reboot remains separate host maintenance. See [installation recovery](../operations.md#initial-trust-and-controller-installation).
+
+The restricted SSH release and separate check succeeded. [Unibase's current release](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md#current-staging-release)
+owns serving commit, image digest and application acceptance. Production activation,
+restore rehearsal, timer activation and Dify functional acceptance remain pending.
 
 ## Staging acceptance follow-up — 2026-10-25
 
@@ -10,11 +48,10 @@ The corrective application release and independent check succeeded after a repro
 Cloudflare email-obfuscation/CSP hydration failure. Unibase now sends no-transform
 with its private/no-store document response; fresh authenticated account/admin pages
 show no injected decoder or new console errors. This was an application-image change,
-not host/bootstrap/provider maintenance. Installed control/config identity remains
-unchanged. The [operations release record](../operations.md#current-unibase-release--2026-10-25)
-owns the current source/digest and the original bootstrap evidence below remains dated.
+not host/bootstrap/provider maintenance. That image-only change retained the then-installed control/config identity. The [operations release record](../operations.md#current-unibase-release--2026-10-25)
+links to application source/digest evidence and the original bootstrap evidence below remains dated.
 
-## Current staging bootstrap — 2026-10-25
+## Historical staging bootstrap — 2026-10-25
 
 Operator output confirms Compose 5.6.1 and Buildx 0.38.1 installation, with Docker
 Engine retained. The candidate parsed the active projects with their retained
@@ -28,7 +65,7 @@ replacing the earlier missing-setup result. Subsequent release/check workflows
 verified Unibase app and both workers healthy, with private Redis and Nginx bound
 only to `127.0.0.1:35101`. The application network is `172.30.241.0/24`.
 The [operations record](../operations.md#current-unibase-release--2026-10-25)
-owns source/image/configuration identities and workflow evidence.
+preserves historical bootstrap evidence; current host identities are recorded above.
 
 Scoped discovery immediately before release found Booklet staging/production
 healthy, Dify's previously health-checked services healthy and legacy services

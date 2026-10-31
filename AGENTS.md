@@ -22,7 +22,7 @@
 - Read [the inventory](docs/inventory/srv1.md), [architecture](docs/architecture.md),
   [operations](docs/operations.md) and [implementation plan](docs/implementation-plan.md)
   before infrastructure work. Revalidate time-sensitive observations before applying changes.
-- Follow the operations runbook's three-phase order. Record execution location, owner,
+- Choose the operations runbook's existing-installation or new-installation path. Record execution location, owner,
   reviewed revision, verification and next action. Stop dependent live steps at
   `implementation required`; never invent a command for tooling that does not exist.
   Reuse verified discovery, collect missing inputs together and resume partial setup

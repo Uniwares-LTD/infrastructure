@@ -1,104 +1,48 @@
-# Staging bootstrap and operations runbook
+# Host operations
 
-For new deployments, start with the [named credential inventory and copyable checklist](provider-access.md)
-and the application's [initialization procedure](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md).
-Public app settings use tracked environment JSON, not Actions variables. Each PR
-prepared for publication must state `Operator intervention: none` or identify actions,
-owner, execution location, ordering, verification and failure/resume. Image releases
-cannot update root-owned tooling or provider bindings. Runtime-secret restoration
-and fully unattended initialization remain implementation work. Unibase's guided
-setup helper covers credential validation, supported provider bindings and repository
-secrets; its deployment guide lists the remaining operator checkpoints.
+## Routine operation
 
-Use three phases to reach a working Unibase staging deployment. Keep the existing
-application workers, application Redis and private Nginx for the first release.
-Shared gateway/Redis and app-hosted job endpoints remain the target, but are later
-consolidation work. See [architecture](architecture.md) and the
-[delivery plan](implementation-plan.md) for that distinction.
+Use the application's release/check/rollback interface for routine releases.
+Infrastructure owns host access, installation, approval trust, protected updates,
+maintenance and privileged recovery. Application release identity and functional
+acceptance belong in the application's deployment guide.
 
-The operator establishes protected administrative access once. The agent completes
-discovery and reviewed implementation, then performs setup within the explicitly
-authorized live scope. Routine releases use the restricted deploy account.
-This runbook's publication executes nothing. Commands are instructions checked
-against their interfaces, not evidence of execution on srv1. Steps marked
-**implementation required** cannot be run with the current tooling unchanged.
+| Task | Procedure |
+| --- | --- |
+| Check an existing application | [Routine operator quick start](#routine-operator-quick-start) |
+| Install a new application | [Connect and prepare](#1-connect-and-prepare), then bootstrap |
+| Update an existing controller | [Initial trust and controller installation](#initial-trust-and-controller-installation) |
+| Update protected configuration | [Approved plan operations](#approved-plan-operations) or reviewed [operator update](#optional-ai-configuration-update) |
+| Resolve disk pressure | [Image retention](#image-retention) |
+| Recover an uncertain operation | [Prepare, approve, apply, inspect](#prepare-approve-apply-inspect) |
+| Restore application data | [Manual encrypted recovery](#manual-encrypted-mongodb-and-gridfs-recovery) |
+
+Never replay bootstrap to update an existing registration. Keep private runtime files,
+credentials and recovery snapshots outside Git. Documentation changes require no host
+installation. Booklet, Dify and tunnel ownership remains with their existing owner.
 
 ## Configuration and progress
 
-Use the [Phase 1 preparation package](staging-preparation.md) and
-[protected provider handoff](provider-access.md). Use [the dated inventory](inventory/srv1.md); refresh only facts needed for the
-next decision. Discover available values first and request remaining non-secret
-inputs together. Record secret names and protected-store references, never values.
+The [host inventory](inventory/srv1.md#installed-control-and-capacity--2026-10-31)
+owns installed identities and dated capacity observations. The [credential inventory](provider-access.md)
+owns protected references; request missing references together without printing values.
+For new projects use the application's initializer and reviewed allocation/provider preview.
 
-| Input | Needed for first deployment |
-| --- | --- |
-| Access | Host identity, working SSH transport/profile, key reference, host-key pin and usable privilege path |
-| Revisions | Reviewed infrastructure, Unibase and tunnel-owner revisions |
-| Staging | HTTPS hostname, DNS/tunnel authority and owner-managed route to the app's private Nginx listener |
-| Providers | Existing shared staging Firebase project/credentials, app registration/domains; Atlas cluster, app database/user and exact egress allowlist |
-| Network | Free loopback port and application subnet checked against Docker and host/VPN routes |
-| Runtime | Existing app Redis at database 0, private password reference; current worker/Nginx configuration |
-| Release | Public GHCR package and reviewed source SHA; record immutable image digest when the release workflow builds it |
-| Deferred recovery | Track destination, encryption-key recovery, retention and restore permissions as follow-up; not a first-startup prerequisite |
-
-Use this table for current status, not a chronological log. Status values are
-pending, in progress, blocked and verified. Retain only sanitized verification
-and non-secret workflow/release identifiers.
-
-These checkpoints record the basic staging deployment. The optional AI extension
-and its acceptance are recorded separately in the current release below.
-
-| Phase | Status | Reviewed revision | Verification | Next action |
-| --- | --- | --- | --- | --- |
-| 1 Connect and prepare | Verified (preparation only) | Infrastructure `bb041e4`, Unibase `6edc411`, owner `c182b64` | October 24: provider reads, inventory, 47 Linux deployment tests, 10 Infrastructure tests and 3 Terraform mock tests; separate read-only review | Complete; subsequent live acceptance is recorded in Phase 2 |
-| 2 Bootstrap and deploy | Verified | Runtime `edcc21d`; Infrastructure installer `90ed66a`; owner route `50536f0` | October 25: plugins/account/control and runtime/index preparation complete; Release `40168299056` attempt 3 and independent Check `40168997418` passed, including anonymous pull, local/public readiness and both workers. Booklet staging returned healthy after its separate owner operation; production/Dify/legacy baseline retained | Complete; use Phase 3 routine instructions and do not repeat bootstrap |
-| 3 Verify and hand off | Verified | Corrective runtime `215044b`; handoff guidance in this runbook and the application deployment guide | October 25: account/admin/session/profile/logout checks, operator-reported incognito login/logout and workstation Actions/pinned SSH access verified. Corrective Release `40176352821` and independent Check `40176659441` passed; fresh account/admin loads have no injected decoder or new console errors | Routine staging uses the quick start below. Next: minimum off-host recovery workflow/rehearsal; keep consolidation and production separate |
+October 31 installation and configuration correction are verified. Application release
+and check evidence is canonical in [Unibase's current release](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md#current-staging-release).
+Remaining acceptance: actual OIDC approval workflow claims, recovery configuration and
+rehearsal, timer activation, production activation and project tracking access.
+Shared gateway/Redis/worker consolidation remains deferred.
 
 ### Current Unibase release — 2026-10-25
 
-- Staging: <https://unibase-staging.uniwares.co.uk/account>, branch `_staging`.
-- Source: `1f19ce3963bbd41588b0972b8d55717a97ed1fb5`.
-- Image: `ghcr.io/uniwares-ltd/unibase@sha256:ae8d7bbb5468f1f6ad7f481a9b3c2403a98cdaec34f3ebbb348488e8d30dce9d`.
-- Installed control bundle: `4ce4da8ea0c9842330eeb6c96cf41aa26ecbaab6daf16cf6e7a5481ea4482fa2`.
-- Tracked staging configuration SHA-256: `c13b8b81304490c768c07b769f1b650215d04211d4ce5504a1029dfa85aac91c`.
-- Operator output confirms optional AI/MCP preview, encryption compatibility and
-  `AI_CONFIGURATION_PREPARED`. [Release 40188936199](https://github.com/Uniwares-LTD/unibase/actions/runs/40188936199)
-  passed on October 25, including anonymous digest pull and deployment health checks.
-  Subsequent bounded Dify/MCP/Persona application acceptance also passed;
-  the [application acceptance record](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md#ai-activation-and-acceptance)
-  owns Run, persistence and accounting evidence. No new release was needed for
-  saved application/provider settings.
-- Private release snapshots remain under `/opt/unibase/staging/releases/`; `current`
-  selects the serving snapshot. The prior release was `215044b` with image
-  `sha256:adee7653a0901b7340b300843066f5f7542e86dfa0bc0f569b7bc3dc357848d1`.
-  Inspect retained state before rollback; no rollback rehearsal or data restore
-  occurred. Operator-update backups preserve previous runtime/control bytes separately.
-  Never copy private snapshots or backup contents to Git.
-
-Routine operations use Unibase's own workflows on `_staging`:
-
-```powershell
-gh workflow run check-deployment.yml --repo Uniwares-LTD/unibase --ref _staging -f environment=staging
-```
-
-A reviewed push to `_staging` triggers Release automatically. Do not also dispatch
-the same commit. Use Rollback only when a real compatible healthy predecessor is
-retained; the preceding source is recorded above, without claiming a rollback rehearsal.
-Secret references are repository Actions
-secrets `DEPLOY_SSH_PRIVATE_KEY`, `DEPLOY_SSH_HOST_KEY`, `CLOUDFLARE_READ_TOKEN` and
-the protected provider handoff, not values in this document.
-
-Post-deploy shared-host baseline verification is complete; its dated evidence is
-in the [inventory](inventory/srv1.md). Reuse it unless a new shared-host change
-could affect existing services. Routine Unibase acceptance checks its own app.
-
-The goal is one access handoff, one consolidated input request and one authorization
-for concrete live changes. Provider consent/authentication may still need operator
-input. Honor existing scope authorization; stop for unexpected destructive changes.
+Historical anchor retained for existing links. Use [Unibase's current release](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md#current-staging-release)
+for serving source/image and acceptance; [historical evidence](history/deployment-evidence-2026-10-25.md)
+preserves the earlier bootstrap and release observations.
 
 ## 1. Connect and prepare
 
-Completed for srv1. See the [reviewed bootstrap procedure](history/completed-bootstrap-2026-10-25.md#1-connect-and-prepare). Do not rerun completed setup.
+For a new host/application, gather the [named public inputs and credential references](provider-access.md), verify transport, privilege, capacity and allocations, and prepare a reviewed immutable installation batch for that target. Use the application initializer for bindings. The [historical bootstrap procedure](history/completed-bootstrap-2026-10-25.md#1-connect-and-prepare) is evidence, not a ready-made batch for another host. Setup is complete for srv1; do not rerun it.
 
 ### Establish access
 
@@ -114,7 +58,7 @@ Completed for srv1. See the [reviewed bootstrap procedure](history/completed-boo
 
 ## 2. Bootstrap and deploy
 
-Completed for srv1. See the [reviewed bootstrap procedure](history/completed-bootstrap-2026-10-25.md#2-bootstrap-and-deploy). Do not rerun completed setup.
+For a new registration, use the reviewed `scripts/bootstrap-deploy.py` interface and application preparation procedure after discovery. Install compatible controller/trust and an explicitly reviewed maintenance policy before enabling clients that require them. Existing srv1 registrations instead use the update paths in this guide. The [completed bootstrap record](history/completed-bootstrap-2026-10-25.md#2-bootstrap-and-deploy) preserves prior evidence; do not replay its machine-specific commands.
 
 ## 3. Verify and hand off
 
@@ -129,8 +73,8 @@ fixtures for accounting/retry invariants. Do not introduce paid calls, job endpo
 or new timers. Reuse the completed shared-host baseline unless new shared changes
 warrant another check.
 
-**Expected result:** passing app acceptance, installed release identity above and
-usable routine instructions below. Mark the progress row verified only after all
+**Expected result:** passing app acceptance, the application deployment guide's serving identity and
+usable routine instructions below. Record acceptance only after all
 required checks pass; distinguish later backup/rollback/consolidation work.
 
 **Failure/resume:** preserve working services and app data; resume the failed check.
@@ -146,11 +90,11 @@ routine workflow operation. Actions access and SSH operator access are separate.
 
 | Task | Action and verification |
 | --- | --- |
-| Identify serving release | Read this runbook's source/digest/config record; run Check and compare its reported serving commit/image with that record |
+| Identify serving release | Read the application's release record and Infrastructure's installed-state inventory; run Check and compare the serving commit/image |
 | Check | Run the command below; open its exact run URL and require terminal success with healthy app, dependency and worker checks |
-| Deploy | Review and authorize the application revision; publish that revision to `_staging` once. The automatic Release builds/publishes, proves anonymous digest pull and deploys. Record terminal result and serving identity; do not also dispatch the same release |
+| Deploy | Review and authorize the application revision; merge a promotion PR from main into `_staging` once. The automatic Release builds/publishes, proves anonymous digest pull and deploys. Record terminal result and serving identity; do not also dispatch the same release |
 | Roll back | Only with a retained compatible healthy predecessor, select `_staging` in Restore previous Unibase release with `environment=staging`. Inspect current/predecessor state first; rollback may change the serving release and config but never restore the DB |
-| Privileged maintenance | Use the separately authorized trusted root/operator procedure. `srv1-ops-admin` currently grants only fixed discovery sudo; routine deploy has neither general sudo nor Docker-group access |
+| Privileged maintenance | Use the separately authorized trusted root/operator procedure. The key-only operator has passwordless fixed discovery; its broad sudo entry requires authentication unavailable with the disabled password. Do not enable a password to obtain broad sudo; use the existing authorized root session for installation. Routine deploy has neither general sudo nor Docker-group access |
 
 ```powershell
 gh workflow run check-deployment.yml --repo Uniwares-LTD/unibase --ref _staging -f environment=staging
@@ -364,11 +308,10 @@ its consumers and preserving operator access.
 
 ## Image retention
 
-Source implementation is available; installation, deletion and timer activation remain
-separate operator actions. The October 31, 2026 user-supplied root readback reports
-154 GB total, 11 GB available (94% used), 135 GB under Docker and Docker's estimate
-of 111.5 GB reclaimable images. This supersedes the old 41 GiB observation.
-Reclaimable space is not a reviewed deletion list.
+The installed policy enrolls only Unibase. Automatic cleanup and the timer remain
+disabled; installation is not activation. See the [dated capacity and enrollment record](inventory/srv1.md#installed-control-and-capacity--2026-10-31).
+A one-time authorized Booklet cleanup used a 72-hour threshold with current/previous
+and container protections; it did not change the policy below or enroll Booklet.
 
 ### Policy and protection
 
@@ -471,26 +414,13 @@ investigating repeated failures. Database restore is never image-cleanup recover
 
 ## Minimum staging backup and recovery
 
-Target one manual application workflow with `backup` and `restore` actions.
-Back up before migrations or destructive operations, rather than every image
-deployment. A manual policy accepts loss since the last successful backup;
-production recovery expectations remain a separate decision.
-
-- Include the app MongoDB database and GridFS bytes; verify a private encrypted
-  off-host archive, manifest and checksum before declaring success.
-- Pause/drain app and worker writers (and timers after their introduction) for a consistent backup/restore. Require an exact
-  backup ID and target confirmation for restore, and take a pre-restore backup.
-- Verify restoration in a disposable database before relying on recovery.
-- Preserve runtime secret recovery separately. Redis counters do not need backup.
-  Shared Firebase identities and Dify infrastructure are outside an app DB restore.
-- Retain image/configuration rollback independently; do not automatically restore
-  data after an image deployment failure. Extend coverage before enabling S3 media.
-
-Off-host destination, encryption-key recovery, retention and exact database roles
-remain open. `dbAdmin` alone must not be assumed sufficient for dumping/restoring
-data; verify the required actions with dedicated workflow credentials. MinIO on the
-same VPS alone does not protect against VPS loss. Do not reuse Booklet/Dify backup
-buckets or credentials without a reviewed ownership/access decision.
+Manual encrypted MongoDB/GridFS backup and restore are implemented through the
+[approved recovery interface](#manual-encrypted-mongodb-and-gridfs-recovery). Configure
+the off-host destination, encryption-key recovery and separate database credentials,
+then rehearse restoration to a disposable database before claiming recovery acceptance.
+These live prerequisites remain pending. Do not automatically restore data after an
+image deployment failure. Runtime-secret recovery remains separate; shared Firebase
+identities and Dify infrastructure are outside an application database restore.
 
 ## References
 
@@ -507,25 +437,22 @@ buckets or credentials without a reviewed ownership/access decision.
 
 ## Deployment preflight
 
-The repository now implements a read-only `preflight` action in dispatcher protocol
-version 1. Installation on srv1 is pending; source availability is not live acceptance.
-Install the reviewed dispatcher before enabling mandatory application preflight.
-Existing deploy/check/rollback requests remain supported.
-
-A preflight request has exactly `version`, `project`, `environment`, `action` and
-`configurationHash`. Only staging is accepted. The response is bounded JSON with
-`version: 1`, `code`, `compatible`, `installedRevision`, `installedConfigurationHash`
-and `requestedConfigurationHash`. Unknown identities are null. `COMPATIBLE` exits 0;
-rejections exit 2; unexpected internal failures exit 1. Codes are `COMPATIBLE`,
-`CONFIGURATION_MISMATCH`, `INVALID_REQUEST`, `MISSING_REGISTRATION`,
-`UNTRUSTED_CONTROL`, `IMAGE_REPOSITORY_MISMATCH` and `INTERNAL_FAILURE`.
+The installed dispatcher supports read-only `preflight` in protocols 1 and 2.
+Unibase uses version 2 with `requiredCapabilities`; legacy version-1 clients remain
+supported. Requests carry `version`, `project`, `environment`, `action` and
+`configurationHash`; version 2 can also bind `requiredCapabilities`. Version 1 accepts `staging`; version 2 accepts
+`staging` and `prod`. Responses carry the request protocol version, `code`,
+`compatible`, `installedRevision`, `installedConfigurationHash` and
+`requestedConfigurationHash`. Unknown identities are null. `COMPATIBLE` exits 0,
+rejections exit 2 and internal failure exits 1. Error codes are allowlisted by the
+dispatcher; private exception text is suppressed.
 Preflight never executes application control scripts or modifies registration/runtime.
 Hashes identify public configuration only; no private settings or exception text are
 returned. Deploy independently revalidates registration/configuration immediately
 before invoking installed control code. Preflight reserves no state and grants no
 permission to update configuration.
 
-**Operator intervention required for dispatcher rollout:** the trusted srv1 operator
+**For a new or unmigrated host:** the trusted srv1 operator
 installs the checksum-verified controller bundle and explicit trust using the installer
 described below, retaining the previous executable for recovery. The
 bootstrap installer deliberately refuses changed existing files and must not be replayed
@@ -545,19 +472,12 @@ The successful parent projected host hash was
 `c13b8b81304490c768c07b769f1b650215d04211d4ce5504a1029dfa85aac91c`;
 the permission correction projects to
 `3be35b4456ec3086cb65ed82bc8a8bc3ecd7d634fc0dabaebae5974dce2f0d1c`.
-The recorded installation matches the former. This supports an uninstalled operator
-update; the old generic exception does not prove its precise cause. The available
-operator account cannot read the protected registration without password-based sudo.
-Privileged readback of registration/hash and existence of a config-update-pending
-journal is pending. Do not publish journal contents or private runtime files.
-
-After confirmed readback, prepare the reviewed immutable application bundle using
-its host_configuration projection, preview/apply the existing update-app-config.py
-interface with the exact current revision, and retain credentials/encryption bytes.
-If pending recovery exists, inspect and recover before retry. Publish/install/release
-only with separate authorization. Application acceptance and Dify catalog/owned-Run
-checks remain in Unibase's deployment guide. Do not rewrite dated release records as
-current facts before verification.
+The October 31 privileged readback confirmed the former installed hash. The reviewed
+operator update installed the corrected profile and compatible application bundle;
+preflight and the subsequent staging release/check passed. See the [installed identities](inventory/srv1.md#installed-control-and-capacity--2026-10-31)
+and [application acceptance](https://github.com/Uniwares-LTD/unibase/blob/main/docs/deployment.md#current-staging-release).
+The mismatch is resolved; Dify functional acceptance remains pending. Do not replay
+this correction or an owned Run as routine setup.
 
 ### Projected bundles and version-2 execution
 
@@ -583,7 +503,7 @@ written with unknown before execution, then completed or failed after a known re
 An abrupt termination therefore leaves unknown. This is not readiness evidence after
 subsequent host changes. Do not retry unknown operations until privileged readback of
 actual containers, selected release and pending configuration journals resolves them.
-Source includes the status/approval workflow described below; installation remains pending.
+The controller and trust are installed. Actual emitted OIDC claims and an approved-plan live execution remain unverified.
 
 ## Approved plan operations
 
@@ -621,7 +541,31 @@ and reviewed `config/approval-trust.example.json` to the operator. On the host,
 `python3 controller-install.py --bundle OUTPUT.tar --sha256 MANIFEST_CHECKSUM --expected-dispatcher-sha256 READBACK_CHECKSUM --trust approval-trust.json`
 is a preview; append `--apply` only for the separately authorized installation. These
 identities are generated/read-back inputs; never substitute an unreviewed working tree.
-The installer needs Python venv support and access to pinned Python package dependencies.
+The installer needs working Python venv/ensurepip support and access to the pinned
+Python package dependencies. Importing `venv` alone is not a sufficient prerequisite
+check. In the root Ubuntu terminal, verify a disposable environment before installation:
+
+```bash
+(
+  set -euo pipefail
+  probe="$(mktemp -d /root/controller-venv-check.XXXXXX)"
+  trap 'rm -rf -- "$probe"' EXIT
+  python3 -m venv "$probe/venv"
+  "$probe/venv/bin/python" -I -m pip --version
+)
+```
+
+On the recorded Ubuntu 24.04/Python 3.12 host, missing ensurepip was resolved with
+`apt-get update` and `apt-get install --no-install-recommends python3.12-venv` in the
+root session. Review package changes before accepting; a reboot is separate maintenance.
+
+If installation fails, inspect dispatcher checksum, candidate directory,
+`dependencies-ready`, dependency import success and trust-file presence without
+printing credentials. The October 31 failure left the old dispatcher selected and a
+partial venv without pip. After fixing that prerequisite, the same reviewed installer
+resumed successfully with its original expected dispatcher checksum. Never delete the
+candidate or predecessor blindly, bypass a changed checksum, or replay bootstrap.
+An error after replacement needs readback before deciding whether to retry.
 It keeps a root-owned immutable controller directory/venv, atomically replaces the
 fixed dispatcher, and retains the previous executable. It preserves account/key/sudo
 rules and refuses unreviewed trust replacement. Dependency installation can resume
