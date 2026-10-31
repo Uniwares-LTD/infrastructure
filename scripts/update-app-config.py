@@ -56,14 +56,14 @@ def runtime_values(raw):
     return values
 
 
-def merge(old_public, new_public, old_runtime, private):
+def merge(old_public, new_public, old_runtime, private, target="staging"):
     before, after = json.loads(json.dumps(old_public)), json.loads(json.dumps(new_public))
     for config in (before, after):
         for key in PUBLIC:
             config['runtime'].pop(key, None)
     if before != after:
         raise ValueError('Only optional AI/MCP runtime settings may change')
-    if not isinstance(private, dict) or not private:
+    if not isinstance(private, dict):
         raise ValueError('Private input must be a nonempty object')
     for key, value in private.items():
         if key not in PRIVATE and not re.fullmatch(r'(DIFY_KEY_|MCP_TOKEN_)[A-Z0-9_]+', key):
@@ -73,7 +73,7 @@ def merge(old_public, new_public, old_runtime, private):
     values = runtime_values(old_runtime)
     values.update({k: v for k, v in new_public['runtime'].items() if v is not None})
     values.update(private)
-    if values.get('FIREBASE_AUTH_EMULATOR_HOST') or values.get('APP_ENV') != 'staging':
+    if values.get('FIREBASE_AUTH_EMULATOR_HOST') or values.get('APP_ENV') != target:
         raise ValueError('Local configuration forbidden')
     if values.get('PAYMENTS_MODE', 'disabled') != 'disabled' or values.get('ASSET_STORE', 'mongo') != 'mongo':
         raise ValueError('Payments and storage changes are outside this update')

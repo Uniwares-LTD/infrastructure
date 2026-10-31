@@ -405,3 +405,201 @@ buckets or credentials without a reviewed ownership/access decision.
 - [Caddy automatic HTTPS](https://caddyserver.com/docs/automatic-https)
 - [Redis logical databases](https://redis.io/docs/latest/commands/select/)
 - [systemd timers](https://www.freedesktop.org/software/systemd/man/latest/systemd.timer.html)
+
+## Deployment preflight
+
+The repository now implements a read-only `preflight` action in dispatcher protocol
+version 1. Installation on srv1 is pending; source availability is not live acceptance.
+Install the reviewed dispatcher before enabling mandatory application preflight.
+Existing deploy/check/rollback requests remain supported.
+
+A preflight request has exactly `version`, `project`, `environment`, `action` and
+`configurationHash`. Only staging is accepted. The response is bounded JSON with
+`version: 1`, `code`, `compatible`, `installedRevision`, `installedConfigurationHash`
+and `requestedConfigurationHash`. Unknown identities are null. `COMPATIBLE` exits 0;
+rejections exit 2; unexpected internal failures exit 1. Codes are `COMPATIBLE`,
+`CONFIGURATION_MISMATCH`, `INVALID_REQUEST`, `MISSING_REGISTRATION`,
+`UNTRUSTED_CONTROL`, `IMAGE_REPOSITORY_MISMATCH` and `INTERNAL_FAILURE`.
+Preflight never executes application control scripts or modifies registration/runtime.
+Hashes identify public configuration only; no private settings or exception text are
+returned. Deploy independently revalidates registration/configuration immediately
+before invoking installed control code. Preflight reserves no state and grants no
+permission to update configuration.
+
+**Operator intervention required for dispatcher rollout:** the trusted srv1 operator
+installs the checksum-verified controller bundle and explicit trust using the installer
+described below, retaining the previous executable for recovery. The
+bootstrap installer deliberately refuses changed existing files and must not be replayed
+for this update. Prepare the exact operator batch only after current installed checksum
+and candidate revision are known; preserve registrations, keys and sudo rules. This
+document authorizes no installation.
+Verify matching and mismatching read-only requests, then an existing restricted check.
+Only afterwards promote the application's mandatory preflight change. If installation
+or verification fails, retain/restore the previous dispatcher and defer application
+promotion. Do not bootstrap providers or replace application registrations to install
+this behavior.
+
+### Permission-correction recovery
+
+Unibase run 41177847093 built/published its image but was rejected by the dispatcher.
+The successful parent projected host hash was
+`c13b8b81304490c768c07b769f1b650215d04211d4ce5504a1029dfa85aac91c`;
+the permission correction projects to
+`3be35b4456ec3086cb65ed82bc8a8bc3ecd7d634fc0dabaebae5974dce2f0d1c`.
+The recorded installation matches the former. This supports an uninstalled operator
+update; the old generic exception does not prove its precise cause. The available
+operator account cannot read the protected registration without password-based sudo.
+Privileged readback of registration/hash and existence of a config-update-pending
+journal is pending. Do not publish journal contents or private runtime files.
+
+After confirmed readback, prepare the reviewed immutable application bundle using
+its host_configuration projection, preview/apply the existing update-app-config.py
+interface with the exact current revision, and retain credentials/encryption bytes.
+If pending recovery exists, inspect and recover before retry. Publish/install/release
+only with separate authorization. Application acceptance and Dify catalog/owned-Run
+checks remain in Unibase's deployment guide. Do not rewrite dated release records as
+current facts before verification.
+
+### Projected bundles and version-2 execution
+
+The bundle builder now accepts only a full immutable commit containing the supported
+`deploy/contract.json`. It interprets that data with Infrastructure-owned code, strips
+image-owned fields before creating the archive, and writes a sibling manifest with
+source commit, contract version, configuration hashes, checksum and capabilities.
+The bundle and manifest are a review pair. Never use a raw git archive as the operator
+configuration update bundle. Existing source revisions without a contract must first
+receive the reviewed contract change; the builder does not guess an old projection.
+
+Version 2 currently supports the existing deploy/check/rollback/preflight request
+shape and external targets staging/prod (prod maps to retained production paths).
+It requires an installed bundle declaring operation-lock-v1. Preflight rejects old
+bundles. The dispatcher acquires the existing per-application operation.lock before
+registration validation, then inherits that descriptor into the application script.
+Version 1 retains its existing execution behavior and is not claimed race-free.
+
+Lock acquisition waits at most 300 seconds; execution waits at most 1200 seconds.
+Timeout or handled interruption kills and reaps the process group before releasing
+the lock. The root-private `/var/lib/<project>/operation-status.json` is atomically
+written with unknown before execution, then completed or failed after a known return.
+An abrupt termination therefore leaves unknown. This is not readiness evidence after
+subsequent host changes. Do not retry unknown operations until privileged readback of
+actual containers, selected release and pending configuration journals resolves them.
+Source includes the status/approval workflow described below; installation remains pending.
+
+## Approved plan operations
+
+Version 2 adds capabilities, plan, apply and status plus manual backup/restore plan
+preparation. Application clients send fixed JSON through the restricted account.
+Preparation reads installed configuration under the application lock, verifies the
+checksum-bound source bundle, derives changed setting names and credential references (including control.bundle for
+application control-script/template updates),
+and stores an immutable canonical plan under `/var/lib/<app>/operation-plans`.
+No candidate code runs during preparation. Provider and data-migration executors are
+unsupported and return OWNER_ACTION_REQUIRED. Existing optional AI/MCP settings use
+the bounded updater; other host changes require an explicit executor extension.
+
+The plan binds source/image/bundle/configuration identities, observed registration
+and running release identity, ordered operations, interruption and recovery guidance.
+Its SHA-256 digest is both plan ID and approval audience. Host changes after preview
+require a fresh plan. Root-private journals record intent before mutation and completed
+checkpoints afterward. One-use JWT IDs reject replay. A fresh workflow dispatch may
+resume completed checkpoints; uncertain writes require conclusive readback. Workflow
+reruns are rejected because actor identity alone cannot establish who clicked rerun.
+
+### Initial trust and controller installation
+
+This is a one-time reviewed operator action, not an application release. First obtain
+sanitized privileged readback of installed dispatcher SHA-256, application registration,
+projected profile hash, current release identity and presence (not contents) of pending
+configuration journals. Resolve existing journals before changing tooling. Do not replay
+bootstrap on installed applications. New-host bootstrap installs a fail-closed placeholder;
+complete controller/trust installation before accepting requests.
+
+Build with `python scripts/build-controller-bundle.py CHECKOUT REVIEWED_FULL_COMMIT OUTPUT.tar`
+from the Infrastructure workstation checkout. The output manifest binds the archive to
+the exact source commit. Securely transfer the reviewed archive, manifest, installer
+and reviewed `config/approval-trust.example.json` to the operator. On the host,
+`python3 controller-install.py --bundle OUTPUT.tar --sha256 MANIFEST_CHECKSUM --expected-dispatcher-sha256 READBACK_CHECKSUM --trust approval-trust.json`
+is a preview; append `--apply` only for the separately authorized installation. These
+identities are generated/read-back inputs; never substitute an unreviewed working tree.
+The installer needs Python venv support and access to pinned Python package dependencies.
+It keeps a root-owned immutable controller directory/venv, atomically replaces the
+fixed dispatcher, and retains the previous executable. It preserves account/key/sudo
+rules and refuses unreviewed trust replacement. Dependency installation can resume
+without switching the executable prematurely.
+
+The trust example records the user-selected Admin team membership as of 2026-10-31:
+Amir-Ahani, sinasava, alivahidd, uniwares-uk and Mehdi-varm (numeric IDs in JSON).
+Changes in team membership require reviewed explicit enrollment changes. No team or
+organization permission was changed. Trust restricts repository/owner IDs, main,
+workflow_dispatch, first run attempt, exact reusable workflow revision, token expiry,
+RS256 GitHub issuer and audience `uniwares:plan:DIGEST`. Verification uses pinned PyJWT
+and cryptography. Before acceptance, verify the actual claims emitted by the pinned
+workflow against this configuration; synthetic signed-token tests are not live proof.
+
+Configure Infrastructure's DEPLOY_SSH_PRIVATE_KEY with its restricted deployment key
+and DEPLOY_SSH_HOST_KEY with the independently verified pinned host key (key-only or
+an exact host-prefixed known_hosts line). Never install srv1-ops-admin in Actions.
+Reviewed `config/approval-targets.json` binds each app/target to its host. Production
+is deliberately absent until its separate activation review. No Docker socket or
+general sudo is granted to workflows.
+
+### Prepare, approve, apply, inspect
+
+The application **Prepare protected deployment** workflow builds once, anonymously
+verifies the immutable image and returns the host-stored plan and digest. Review the
+changed names, credential references, identities and interruption/recovery steps.
+An enrolled admin dispatches Infrastructure **Apply deployment plan** on main with the
+plan ID and matching digest. Its reusable executor and checked-out client are pinned
+to immutable commits. Host validation, not workflow visibility, enforces authorization.
+Supported configuration application preserves existing credentials/encryption bytes,
+then continues the exact associated image deployment under the same application lock.
+Never reconstruct or upload privileged shell commands for a prepared plan.
+
+Application `deploy:ops status TARGET --plan-id DIGEST` reports sanitized checkpoints.
+Lost SSH, timeout or interruption means unknown until inspection. Deployment subprocess
+groups are terminated/reaped before releasing the lock; recovery subprocesses have
+bounded waits and the same cleanup. No automatic database restoration occurs.
+Application rollback restores its retained release snapshot. Protected host-runtime
+predecessors remain at config-previous-CHECKSUM for explicit operator recovery; inspect
+the journal and installed/serving identities before choosing a recovery direction.
+Do not retry an uncertain provider write or manually delete replay records.
+
+Subsequent controller updates use the same approval path: build the immutable controller
+archive, run the application's `deploy:ops plan TARGET --bundle OUTPUT.tar --manifest OUTPUT.tar.manifest.json --image CURRENT_IMMUTABLE_IMAGE --controller-checksum OBSERVED_DISPATCHER_SHA256`,
+review and approve. The installer serializes global replacement, checks the expected
+predecessor and atomically retains it. Trust changes remain a separate operator action.
+
+### Manual encrypted MongoDB and GridFS recovery
+
+Install reviewed MongoDB database tools and restic before enabling recovery. The operator
+creates root-private `/etc/<app>/<staging|production>/recovery.json` containing exactly
+repository (`s3:https://...`), passwordFile, accessKeyId, secretAccessKey, mongoUri and
+database. Use separate recovery credentials and a root-private restic password file;
+initialize the encrypted S3-compatible repository once with the recovery owner. Never
+put these values in plans, artifacts or Git. The database must match the app environment.
+
+Application backup/restore commands prepare plans for the same Infrastructure approval.
+Backup pauses only previously running app/worker/ai-worker writers, creates a whole-db
+MongoDB archive including GridFS, records its hash/identity, uploads through restic and
+checks the repository, then restarts those writers. Restore requires a full snapshot
+ID and explicit destination; it takes a fresh destination backup first, validates the
+selected archive and remaps namespaces explicitly. Only the configured database or
+its `_rehearsal_NAME` database is allowed. Rehearse against a disposable destination
+before production acceptance and verify web, both workers and data afterward.
+
+There are no schedules and no retention/prune operations. Keep backups until separately
+reviewed retention work. Destructive migrations are not implemented by this executor;
+their named owner must provide a fresh verified backup and explicit recovery acceptance.
+Ordinary releases use backward-compatible migrations and never restore data automatically.
+
+### Rollout acceptance and ownership
+
+Install/verify the compatible controller first, then the projected permission correction
+and application control capability, then enable version-2 clients. Verify staging before
+production activation. Preserve legacy production paths/resource/database identities;
+external prod maps to production runtime. Disable old general-sudo access only after
+migration verification under a separately authorized access change. Verify matching and
+mismatching preflight, exact runtime credentials preservation, web and both workers,
+readiness, Dify catalog permissions and serving identity. Any owned Run retry is separate.
+Implementation/publication is not installation, deployment or live acceptance.

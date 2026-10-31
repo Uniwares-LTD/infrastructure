@@ -97,3 +97,38 @@ For later work: shared network/gateway design, shared Redis location/database al
 job endpoint/timer interfaces, off-host destination/retention/encryption recovery and
 required restore actions, production recovery objectives and migration ownership.
 Do not resolve later decisions by blocking unrelated first-release work.
+
+## Accepted deployment reliability and Handbook adoption
+
+The accepted change separates three outcomes: Infrastructure Handbook adoption,
+Infrastructure read-only preflight/safe diagnostics, and Unibase release integration.
+Local adoption preserves this accepted milestone queue; no historical issues are
+created. Issue-ready titles are "Adopt Handbook in Infrastructure", "Expose read-only
+deployment compatibility and safe rejection codes", and (in Unibase) "Check host
+compatibility before publishing releases". Link eventual issues with Related to;
+issue creation and project enrollment remain pending human approval/access verification.
+
+Handbook adoption records English, main integration, no deployment branches and
+Uniwares project #2. Project identity/fields/association/access remain unverified due
+to missing read:project scope. No team, project or permission changes are included.
+The existing Handbook checkout remains on its work branch; task resource reads use
+reviewed revision 68114406d21c7f811281503970f7982d73239c0c without changing that branch.
+
+Preflight code and synthetic checks do not certify installed host behavior. Follow
+[deployment preflight](operations.md#deployment-preflight) for compatibility rollout
+and pending protected readback. Dispatcher installation, permission-profile update,
+application publication/release and live acceptance are separate pending operations.
+
+## Accepted repeatable deployment implementation
+
+Local source implements projected bundles, v2 locked execution, durable plans and
+one-use OIDC approvals, fixed configuration/controller/recovery operations and pinned
+workflow routing. Unibase clients now request v2; host installation must precede their
+promotion. Production mapping and manual encrypted recovery are implemented but not
+activated. Admin enrollment uses the selected existing team's numeric IDs. No issues,
+project access or organization permissions were changed.
+
+Linux synthetic integration covers archive/updater/dispatcher, contention, approvals
+and recovery boundaries. Actual emitted GitHub OIDC claims, protected readback,
+controller installation, off-host restore rehearsal and live release acceptance remain
+rollout verification, not source-test claims. See operations.md for ordered procedures.

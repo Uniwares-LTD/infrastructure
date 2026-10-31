@@ -123,7 +123,12 @@ def main():
         groups = subprocess.check_output(['/usr/bin/id', '-nG', ACCOUNT], text=True).split()
         if set(groups) != {ACCOUNT}:
             raise ValueError('Existing deployment account has unexpected groups')
-    files = {installed_dispatcher: dispatcher.read_bytes(), sudo_rule: rule.encode(), home / '.ssh/authorized_keys': authorized.encode()}
+    # Initial account bootstrap must not copy a dispatcher without its modules/venv.
+    # Preserve an existing controller; new hosts remain fail-closed until reviewed install.
+    disabled = b"#!/usr/bin/python3\nprint('{\"compatible\":false,\"code\":\"CONTROLLER_INSTALL_REQUIRED\"}')\nraise SystemExit(2)\n"
+    files = {sudo_rule: rule.encode(), home / '.ssh/authorized_keys': authorized.encode()}
+    if not installed_dispatcher.exists():
+        files[installed_dispatcher] = disabled
     for target, content in files.items():
         safe_parent(target)
         if target.exists() and target.read_bytes() != content:
