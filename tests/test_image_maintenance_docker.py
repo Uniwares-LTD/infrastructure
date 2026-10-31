@@ -12,6 +12,8 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import ssl
+import shutil
 import tarfile
 import tempfile
 import threading
@@ -70,6 +72,22 @@ class DockerIntegrationTests(unittest.TestCase):
             def log_message(self, *args):
                 pass
         server = ThreadingHTTPServer(('127.0.0.1', 0), Registry)
+        # Current Docker daemons require TLS even for loopback registries. Trust
+        # only this unique test endpoint on the explicitly disposable runner.
+        certificate = tempfile.TemporaryDirectory()
+        self.addCleanup(certificate.cleanup)
+        cert, key = Path(certificate.name)/'cert.pem', Path(certificate.name)/'key.pem'
+        subprocess.run(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes',
+            '-keyout', str(key), '-out', str(cert), '-days', '1', '-subj', '/CN=localhost',
+            '-addext', 'subjectAltName=DNS:localhost,IP:127.0.0.1'],
+            check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        trust = Path('/etc/docker/certs.d') / ('localhost:' + str(server.server_port))
+        trust.mkdir(parents=True, exist_ok=False)
+        shutil.copyfile(cert, trust/'ca.crt')
+        self.addCleanup(lambda: (trust.joinpath('ca.crt').unlink(), trust.rmdir()))
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(cert, key)
+        server.socket = context.wrap_socket(server.socket, server_side=True)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         repo = 'localhost:' + str(server.server_port) + '/retention-' + uuid.uuid4().hex

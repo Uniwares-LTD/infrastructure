@@ -227,6 +227,7 @@ def execute_with_lock(request, fd):
                 if 'image-retention-v1' in json.loads((source / 'deploy/contract.json').read_text()).get('requiredCapabilities', []):
                     with lock(maintenance_state / 'image-maintenance.lock', 'UNIWARES_IMAGE_LOCK_FD'):
                         # The caller still owns fd; never acquire a second app lock.
+                        engine.config = policy()
                         ledger = engine.ledger(request['project'])
                         current = engine.releases / request['project'] / ('production' if request['environment'] == 'prod' else request['environment']) / 'current'
                         if not any(x['snapshot'] == current.resolve().name for x in ledger['activations']):

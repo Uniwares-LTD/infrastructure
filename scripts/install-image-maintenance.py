@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
-from image_maintenance import policy, trusted, MaintenanceError, STATE
+from image_maintenance import policy, trusted, MaintenanceError, STATE, lock
 
 COMMAND = Path('/usr/local/sbin/uniwares-image-maintenance')
 POLICY = Path('/etc/uniwares-infrastructure/image-retention.json')
@@ -101,21 +101,26 @@ def main():
                       'timerActivation': 'separate operator action'}))
     if not args.apply:
         return
-    directory = INSTALL_ROOT / args.sha256
-    directory.mkdir(parents=True, mode=0o700, exist_ok=True)
-    trusted(directory)
-    installed = directory / 'image_maintenance.py'
-    if installed.exists() and installed.read_bytes() != raw:
-        raise MaintenanceError('MAINTENANCE_CHECKSUM_MISMATCH')
-    replace(installed, raw, 0o600)
     STATE.mkdir(parents=True, mode=0o700, exist_ok=True)
-    POLICY.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
-    replace(POLICY, args.policy.read_bytes(), 0o600)
-    install_command(installed)
-    for name, value in [('service', SERVICE), ('timer', TIMER)]:
-        replace(UNITS / ('uniwares-image-maintenance.' + name), value.encode(), 0o644)
-    subprocess.run(['systemctl', 'daemon-reload'], check=True)
-    # Deliberately no enable/start; do not change an operator's existing timer state.
+    with lock(STATE / 'image-maintenance.lock', 'UNIWARES_IMAGE_LOCK_FD'):
+        if POLICY.exists() and POLICY.read_bytes() != args.policy.read_bytes():
+            if hashlib.sha256(POLICY.read_bytes()).hexdigest() != args.expected_policy_sha256:
+                raise MaintenanceError('EXPECTED_POLICY_CHECKSUM_REQUIRED')
+        directory = INSTALL_ROOT / args.sha256
+        directory.mkdir(parents=True, mode=0o700, exist_ok=True)
+        trusted(directory)
+        installed = directory / 'image_maintenance.py'
+        if installed.exists() and installed.read_bytes() != raw:
+            raise MaintenanceError('MAINTENANCE_CHECKSUM_MISMATCH')
+        replace(installed, raw, 0o600)
+        STATE.mkdir(parents=True, mode=0o700, exist_ok=True)
+        POLICY.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
+        replace(POLICY, args.policy.read_bytes(), 0o600)
+        install_command(installed)
+        for name, value in [('service', SERVICE), ('timer', TIMER)]:
+            replace(UNITS / ('uniwares-image-maintenance.' + name), value.encode(), 0o644)
+        subprocess.run(['systemctl', 'daemon-reload'], check=True)
+        # Deliberately no enable/start; do not change an operator's existing timer state.
 
 
 if __name__ == '__main__':

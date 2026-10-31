@@ -60,12 +60,8 @@ def route(d,request):
             from image_maintenance import Maintenance, policy, lock, STATE
             engine = Maintenance(policy())
             with lock(STATE / 'image-maintenance.lock', 'UNIWARES_IMAGE_LOCK_FD'):
-                result = engine.preview(project)
-                previous = engine.apps / project / 'image-maintenance-status.json'
-                from image_maintenance import read
-                return {'version': 2, 'disk': result['disk'], 'snapshots': result['snapshots'],
-                        'protected': result['protected'],
-                        'lastMaintenance': read(previous) if previous.exists() else None}
+                engine.config = policy()
+                return engine.status(project)
         store=PlanStore(d.STATE/project/'operation-plans')
         if action=='status':
             result=store.status(request['planId'])

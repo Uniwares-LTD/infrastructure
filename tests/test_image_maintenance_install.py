@@ -1,4 +1,4 @@
-﻿"""Operator installation is explicit and never activates scheduling."""
+"""Operator installation is explicit and never activates scheduling."""
 import contextlib
 import hashlib
 import importlib.util
@@ -30,6 +30,7 @@ class InstallerTests(unittest.TestCase):
             stack.enter_context(patch.object(installer, 'trusted'))
             stack.enter_context(patch.object(m, 'trusted'))
             stack.enter_context(patch.object(installer.os, 'geteuid', return_value=0))
+            stack.enter_context(patch.object(installer, 'lock', return_value=contextlib.nullcontext()))
             command = stack.enter_context(patch.object(installer.subprocess, 'run'))
             source = root/'source/image_maintenance.py'
             source.write_text('print("fixture")\n')

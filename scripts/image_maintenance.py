@@ -437,6 +437,29 @@ class Maintenance:
                 'ownershipInventory': [{'repository': k, 'images': len(v)} for k, v in sorted(ownership.items())],
                 'snapshots': [{**x, 'cached': x['image'] in local} for x in snapshots][-100:]}
 
+    def status(self, project):
+        self.enrolled(project)
+        result = {'version': 2, 'disk': self.disk(project), 'lastMaintenance': None}
+        previous = self.apps / project / 'image-maintenance-status.json'
+        try:
+            if previous.exists():
+                saved = read(previous)
+                state = saved.get('status')
+                if state not in ('completed', 'running', 'unknown', 'replan-required'):
+                    fail('INVALID_MAINTENANCE_STATUS')
+                summary = {'status': state, 'removedCount': len(saved.get('removed', []))}
+                if re.fullmatch(HEX, saved.get('previewDigest', '')):
+                    summary['previewDigest'] = saved['previewDigest']
+                result['lastMaintenance'] = summary
+            preview = self.preview(project)
+            result.update(protection='verified', snapshots=preview['snapshots'],
+                          protected=preview['protected'], ownershipInventory=preview['ownershipInventory'])
+        except MaintenanceError as error:
+            result.update(protection='blocked', code=str(error))
+        except (ValueError, TypeError, KeyError):
+            result.update(protection='blocked', code='MAINTENANCE_STATE_INVALID')
+        return result
+
     def apply(self, project, preview, automatic=False):
         plan = preview['plan']
         if digest(plan) != preview['digest'] or plan['project'] != project or plan['policyDigest'] != digest(self.config):
@@ -540,6 +563,7 @@ def main():
                 continue
             try:
                 with engine.locks(project, wait=0):
+                    engine.config = policy()
                     results[project] = engine.cleanup(project)
             except MaintenanceError as error:
                 results[project] = {'status': 'skipped', 'code': str(error)}
@@ -550,6 +574,8 @@ def main():
         print(json.dumps({'disk': engine.check_space(args.project)}))
         return 0
     with engine.locks(args.project) as (app_fd, image_fd):
+        engine.config = policy()
+        engine.enrolled(args.project)
         directory = engine.apps / args.project
         if args.action == 'run-release':
             if not args.script or not args.environment or not args.release_action:
@@ -582,9 +608,7 @@ def main():
         elif args.action == 'cleanup':
             result = engine.cleanup(args.project)
         else:
-            result = engine.preview(args.project)
-            path = directory / 'image-maintenance-status.json'
-            result['lastMaintenance'] = read(path) if path.exists() else None
+            result = engine.status(args.project)
         print(json.dumps(result, separators=(',', ':')))
         return 0 if result.get('status') not in ('unknown', 'replan-required') else 2
 
