@@ -1,0 +1,38 @@
+name: Apply approved deployment plan executor
+on:
+  workflow_call:
+    inputs:
+      project:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+      plan_id:
+        required: true
+        type: string
+    secrets:
+      DEPLOY_SSH_PRIVATE_KEY:
+        required: true
+      DEPLOY_SSH_HOST_KEY:
+        required: true
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Uniwares-LTD/infrastructure
+          ref: db0d885b020bcfebf8fd69fbc536b65965f0767f
+      - name: Apply the exact approved plan
+        env:
+          PROJECT: ${{ inputs.project }}
+          TARGET: ${{ inputs.environment }}
+          PLAN_ID: ${{ inputs.plan_id }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_SSH_HOST_KEY: ${{ secrets.DEPLOY_SSH_HOST_KEY }}
+        run: python3 scripts/apply-plan-client.py "$PROJECT" "$TARGET" "$PLAN_ID"
