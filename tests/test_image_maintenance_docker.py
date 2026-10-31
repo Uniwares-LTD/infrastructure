@@ -60,6 +60,7 @@ class DockerIntegrationTests(unittest.TestCase):
                     self.send_error(404)
                     return
                 self.send_response(200)
+                self.send_header('Docker-Distribution-API-Version', 'registry/2.0')
                 self.send_header('Content-Type', kind)
                 self.send_header('Content-Length', str(len(body)))
                 self.send_header('Docker-Content-Digest', sha(body))
@@ -103,7 +104,9 @@ class DockerIntegrationTests(unittest.TestCase):
                     manifests[tag] = manifests[sha(manifest)] = manifest
                     reference = repo + '@' + sha(manifest)
                     references.extend([repo + ':' + tag, reference])
-                    m.run(['docker', 'pull', repo + ':' + tag])
+                    pulled = subprocess.run(['docker', 'pull', repo + ':' + tag],
+                        capture_output=True, text=True, timeout=60, env=m.ENV)
+                    self.assertEqual(pulled.returncode, 0, 'Synthetic loopback image pull: ' + pulled.stderr)
                     snapshot = format(number, '040x') + '.fixture'
                     path = root/'releases/app/staging/releases'/snapshot
                     path.mkdir()
