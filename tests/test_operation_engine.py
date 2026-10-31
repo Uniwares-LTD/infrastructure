@@ -46,7 +46,7 @@ class EngineTests(unittest.TestCase):
    production=project(json.loads((repo/'deploy/environments/production.json').read_text()),contract)
    (old/'deploy/environments/production.json').write_text(json.dumps(production));(old/'project.config.json').write_text('{"slug":"unibase"}')
    runtime=root/'etc/unibase/staging/runtime.env';runtime.parent.mkdir(parents=True)
-   runtime.write_text(''.join(k+'='+v+'\n' for k,v in prior['runtime'].items())+'DIFY_MANAGEMENT_KEY=fixture\nDIFY_CREDENTIAL_ENCRYPTION_KEY='+'e'*64+'\nDIFY_KEY_DOCUMENT_SUMMARY=fixture\nMCP_TOKEN_DIFY=fixture\n')
+   runtime.write_text(''.join(k+'='+v+'\n' for k,v in prior['runtime'].items())+'DIFY_MANAGEMENT_KEY=fixture\nDIFY_CREDENTIAL_ENCRYPTION_KEY='+'e'*64+'\nDIFY_KEY_DOCUMENT_SUMMARY=fixture\nMCP_TOKEN_DIFY=fixture\nPERSONA_COMPLETION_API_KEY=fixture\n')
    candidate=dict(project='unibase',environment='staging',sourceCommit=revision,image=proposed['deployment']['imageRepository']+'@sha256:'+'b'*64,bundleChecksum=manifest['bundleChecksum'],configurationHash=manifest['configurationHashes']['staging'],classification='host-configuration',changedSettings=[],credentialReferences=[])
    request=dict(version=2,action='plan',project='unibase',environment='staging',candidate=candidate,bundle=base64.b64encode(archive.read_bytes()).decode())
    with patch.object(d,'STATE',state),patch.object(d,'REGISTRY',registry),patch.object(d,'CONTROL',control),patch.object(d,'trusted',lambda path:None),patch.object(engine,'RUNTIME',root/'etc'):

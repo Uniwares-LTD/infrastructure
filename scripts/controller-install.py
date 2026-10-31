@@ -15,6 +15,20 @@ DISPATCHER=Path('/usr/local/sbin/uniwares-deploy')
 TRUST=Path('/etc/uniwares-infrastructure/approval-trust.json')
 
 
+def atomic(path,value):
+    fd,name=tempfile.mkstemp(prefix='.controller-state-',dir=path.parent)
+    try:
+        with os.fdopen(fd,'w') as output:
+            os.fchmod(output.fileno(),0o600)
+            json.dump(value,output,sort_keys=True);output.flush();os.fsync(output.fileno())
+        os.replace(name,path)
+        parent=os.open(path.parent,os.O_RDONLY|os.O_DIRECTORY)
+        try:os.fsync(parent)
+        finally:os.close(parent)
+    finally:
+        if os.path.exists(name):os.unlink(name)
+
+
 def validate_trust(trust):
     required={'repositoryId','ownerId','ref','executorRef','executorSha','adminIds'}
     if set(trust)!=required or trust['ref']!='refs/heads/main':raise ValueError('INVALID_TRUST')
@@ -59,7 +73,6 @@ def install(archive,checksum,expected,trust=None):
 
 
 def install_locked(archive,checksum,expected,trust=None):
-    from operation_store import atomic
     if hashlib.sha256(DISPATCHER.read_bytes()).hexdigest()!=expected:raise ValueError('CONTROLLER_CHANGED')
     ROOT.mkdir(parents=True,mode=0o700,exist_ok=True)
     destination=ROOT/checksum

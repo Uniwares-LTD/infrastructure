@@ -121,6 +121,7 @@ def stage(d,store,request):
             for item in json.loads(proposed['runtime'].get(field,'[]')):
                 if item.get('enabled',True) and item.get(reference):references.add(item[reference])
         if proposed['runtime'].get('DIFY_MODE')=='live':references.update(['DIFY_MANAGEMENT_KEY','DIFY_CREDENTIAL_ENCRYPTION_KEY'])
+        if proposed['runtime'].get('PERSONA_COMPLETION_MODE')=='live':references.add('PERSONA_COMPLETION_API_KEY')
         candidate=dict(candidate,changedSettings=changed,classification=expected_class,credentialReferences=sorted(references))
         envelope=prepare(candidate,observed)
         other='staging' if target=='production' else 'production'

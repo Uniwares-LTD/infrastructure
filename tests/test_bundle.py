@@ -23,8 +23,7 @@ bootstrap=module('bundle_bootstrap','bootstrap-deploy.py')
 
 class BundleTests(unittest.TestCase):
     def test_permission_only_bundle_matches_updater_and_dispatcher(self):
-        app=ROOT.parent/'unibase'
-        if not app.exists():app=ROOT/'tests/fixtures/application'
+        app=ROOT/'tests/fixtures/application'  # Fixed permission-correction regression, not mutable application state.
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory); repo=root/'repo'; repo.mkdir()
             def git(*args):
@@ -44,6 +43,8 @@ class BundleTests(unittest.TestCase):
             clients=json.loads(before['runtime']['MCP_CLIENTS_JSON'])
             clients[0]['permissions']=[p for p in clients[0]['permissions'] if p not in ['run:read','artifact:read','artifact:write']]
             before['runtime']['MCP_CLIENTS_JSON']=json.dumps(clients,separators=(',',':'))
+            self.assertEqual(manifest['configurationHashes']['staging'],'3be35b4456ec3086cb65ed82bc8a8bc3ecd7d634fc0dabaebae5974dce2f0d1c')
+            self.assertEqual(hashlib.sha256(json.dumps(before,sort_keys=True,separators=(',',':')).encode()).hexdigest(),'c13b8b81304490c768c07b769f1b650215d04211d4ce5504a1029dfa85aac91c')
             runtime=''.join(k+'='+v+'\n' for k,v in before['runtime'].items())
             runtime+='DIFY_MANAGEMENT_KEY=canary\nDIFY_CREDENTIAL_ENCRYPTION_KEY='+'a'*64+'\nDIFY_KEY_DOCUMENT_SUMMARY=canary\nMCP_TOKEN_DIFY=canary\n'
             merged=updater.merge(before,projected,runtime,{'MCP_TOKEN_DIFY':'canary'})
