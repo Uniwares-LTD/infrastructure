@@ -12,6 +12,11 @@ boundaries; [inventory](inventory/srv1.md) owns dated host facts; [operations](o
 owns installation and recovery procedures; application repositories own serving release identities and functional acceptance. [Implementation plan](implementation-plan.md)
 retains accepted milestones. [Provider access](provider-access.md) owns credential references.
 
+The [data operations proposal](operations.md#proposed-reusable-backup-and-migration-workflows)
+links to the shared Unibase #62 specification. It records future Infrastructure
+responsibilities for approvals, execution and shared status outputs; the current stage
+adds documentation only, not migration execution, APIs or UI.
+
 ## Commands
 
 [package.json](../package.json) owns Handbook commands. Run Python's unittest discovery

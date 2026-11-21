@@ -641,6 +641,98 @@ reviewed retention work. Destructive migrations are not implemented by this exec
 their named owner must provide a fresh verified backup and explicit recovery acceptance.
 Ordinary releases use backward-compatible migrations and never restore data automatically.
 
+### Proposed reusable backup and migration workflows
+
+[Unibase #62](https://github.com/Uniwares-LTD/unibase/issues/62) has a
+[documentation-stage plan](https://github.com/Uniwares-LTD/unibase/blob/main/docs/features/deployment-data-operations/implementation-plan.md)
+for reusable backup-only, migration-on-demand and deployment-integrated operations.
+This is a proposal. The dispatcher still rejects data migration executors. No new
+commands, approval trust, APIs or UI are installed; implementation and execution
+acceptance await explicit later instruction.
+
+For agent-triggered releases, review requirements and obtain approval before the
+agent starts deployment or merges the environment promotion PR. Required migration
+prerequisites must finish under the reviewed execution approval before activation.
+After a successful compatible deployment with pending work, the agent offers an
+approved automatic backup-and-migration run or manual workflow instructions. No work
+means no second prompt; failed deployment does not trigger optional migration work.
+A human merge keeps automatic Release with the same compatibility gates and a summary
+of pending work. Automatic execution means one approved run, not a recurring policy.
+
+Infrastructure extends its existing restricted dispatch, plan/apply/status, OIDC,
+application lock and recovery controls. Applications retain declarations, release
+classification, runner/ledger semantics, functional acceptance and read-only status
+presentation. Resolve identities from destination configuration. Both manual and
+agent paths use the same executor; manual users receive the exact workflow URL,
+repository/ref, target, prepare/apply inputs and status instructions. Agent consent
+does not replace enrolled-actor/OIDC enforcement: when necessary, direct the enrolled
+operator to the existing approval dispatch rather than introducing new approval trust.
+
+Preparation uses trusted read-only ledger probes and static candidate metadata; no
+candidate code runs on the host before approval. One combined approval binds exact
+target/database/revision, observed state, ordered pending IDs/checksums and backup
+requirements. Verify the resulting backup by retrieval and archive identity/hash,
+then durably record its snapshot ID before database writes. Restore rehearsal is
+an environment acceptance requirement, not an extra step on every release. Current
+repository checking alone does not establish this proposed recovery verification.
+
+Expose one sanitized report through workflow outputs, JSON artifacts and run summaries,
+including failed/unknown outcomes and the exact status query. Keep host journals and
+the database ledger authoritative. The trusted executor records one allowlisted
+terminal outcome per plan in the application database, using existing access. The
+existing diagnostics API and admin page share a read-only server reader; add no admin
+REST endpoints, periodic status writes, heartbeat timers or live-progress service.
+Record observation time and distinguish deployment success from pending or failed
+migrations. Missing final reports and active/unknown operations use workflow/host
+status; never repeat migrations merely because outcome recording failed.
+
+Reuse reports and completed checkpoints, avoid duplicate index setup covered by the
+reviewed batch, and use the existing admin Operations page with manual refresh. Do not
+add a waiting workflow, background synchronization service or recurring jobs. Preserve
+compatibility/identity/batch checks, verified backup, locks, one-use approval and final
+ledger/health verification. Uncertain writes need readback before any retry; database
+restore remains separate from image rollback. Destructive or unclassified work needs
+bespoke review. Production activation, retention and provider changes remain outside scope.
+
+The [implementation contract](https://github.com/Uniwares-LTD/unibase/blob/main/docs/features/deployment-data-operations/implementation-plan.md#implementation-contract)
+is ready for later authorized development. It fixes capability `data-operations-v1`,
+fixed report/prepare actions, request-idempotent plans, the existing approved apply
+workflow, and a shared database lease held across backup and migration. The approved
+runner uses a private ready/backup-verified handshake; Infrastructure retains host
+backup privileges. Exact Release candidates stop as blocked-migrations and resume
+through the original run after verification. The contract also fixes bounded timeouts,
+operator readback/recovery, shared terminal reports and one diagnostic status capability.
+Reuse Handbook's existing catalog selection through its technologySkills array, without
+a new selection schema. General data-operation resume/predecessor plans are deferred:
+unknown state blocks new operations until the operator establishes a safe writer/process
+baseline, then the normal freshly approved remaining batch may run. Preserve the
+original journal and backup evidence. The existing blocked-Release continuation remains.
+The planned root-only `data-operation-resolution.py` inspects a prior plan and
+records a mode-0600, state-bound acknowledgment beside its journal after separately
+authorized operator recovery. It preserves original failed/unknown history, performs
+no migration, restore or restart, and provides no generic resume mechanism. Validate
+plan/database/journal identity, stopped predecessor, lease/writer state, backup and
+read-only verifier evidence; reject changed inspection state and reapplication of a
+resolved original plan. New mutations still need fresh approval. The acknowledgment
+cannot waive pending IDs, checksum drift or missing required verification.
+
+Both routine and protected activation inspect authoritative operation evidence as
+well as pending IDs. Zero pending IDs with unresolved verification or writer recovery
+remain blocked-recovery. A valid host completion/resolution permits continuation even
+if the app's final report copy is missing; a completed-looking copy cannot override
+an unresolved host journal. Known pre-write failures with conclusively healthy recovery
+can finalize failed-but-safe without an unnecessary privileged acknowledgment. Record
+write intent before allowing the runner to begin so interruption cannot be mislabeled
+as a pre-write backup failure.
+
+Four implementation checkpoints cover this reduced contract. None of these interfaces
+or control changes is installed by the documentation revision.
+
+Operator intervention for these documentation edits: none. Do not repeat installation
+or run backups/migrations. Future implementation must pass disposable verification
+before separately authorized staging acceptance; recheck serving revision and the full
+ledger before preparing that later operation.
+
 ### Rollout acceptance and ownership
 
 Install/verify the compatible controller first, then the projected permission correction
