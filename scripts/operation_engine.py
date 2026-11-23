@@ -51,9 +51,20 @@ def route(d,request):
     project=request.get('project');target=request.get('environment')
     # Validate common identity using the legacy validator, with no caller command/path.
     d.validate_request(dict(version=2,project=project,environment=target,action='check',configurationHash='0'*64))
+    if action in ('migrations','migrate'):
+        from data_operations import route as data_route
+        with d.operation_lock(project):
+            return data_route(d,PlanStore(d.STATE/project/'operation-plans'),request)
     allowed={'version','project','environment','action'}
     extras={'capabilities':set(),'maintenance':set(),'status':{'planId'},'plan':{'candidate','bundle'},'apply':{'planId','token'},'backup':{'backupId','destination'},'restore':{'backupId','destination'}}
-    if action not in extras or set(request)!=allowed|extras[action]:raise ValueError('INVALID_REQUEST')
+    extra=set()
+    if action=='backup' and 'requestId' in request:
+        extra={'requestId','requiredCapabilities'}
+        if request.get('requiredCapabilities')!=['data-operations-v1']:raise ValueError('UNSUPPORTED_CAPABILITY')
+    if action=='status' and 'offset' in request:
+        extra={'offset'}
+        if type(request['offset']) is not int or request['offset']<0:raise ValueError('INVALID_PAGE')
+    if action not in extras or set(request)!=allowed|extras[action]|extra:raise ValueError('INVALID_REQUEST')
     if action=='capabilities':return {'version':2,'capabilities':CAPABILITIES}
     with d.operation_lock(project) as fd:
         if action == 'maintenance':
@@ -78,6 +89,26 @@ def route(d,request):
         store=PlanStore(d.STATE/project/'operation-plans')
         if action=='status':
             result=store.status(request['planId'])
+            original=store.read(request['planId'])
+            if original['project']!=project or original['environment']!=target:raise ValueError('PLAN_IDENTITY_MISMATCH')
+            if original.get('classification')=='data-migration':
+                result['kind']='data-migration'
+                from data_operations import evidence,resolution,terminal_report
+                data=evidence(store,original)
+                if data:
+                    report=terminal_report(original,data)
+                    settled=resolution(store,original,data)
+                    report['resolution']={k:settled[k] for k in ('disposition','operator','reason','observedAt')} if settled else None
+                    for name in ('pending','applied','verification'):
+                        report[name+'Count']=len(report[name]);report[name]=report[name][request.get('offset',0):request.get('offset',0)+100]
+                    report['nextOffset']=request.get('offset',0)+100 if any(report[name+'Count']>request.get('offset',0)+100 for name in ('pending','applied','verification')) else None
+                    result['dataOperation']=report
+                    from data_operations import Host,activation
+                    try:
+                        host=Host(d,project,target);manifest=host.candidate(original['image'],original['sourceCommit'])
+                        current=activation(store,manifest,host.probe('ledger'),target,host.database)
+                        result.update(activationDecision=current['activationDecision'],nextAction=current['nextAction'])
+                    except Exception:result.update(activationDecision='owner-action-required',nextAction='Inspect authoritative host evidence and probe prerequisites.')
             recovery=store.path(request['planId'],'.recovery.json')
             if recovery.exists():result['recovery']=json.loads(recovery.read_text())
             return result
@@ -91,6 +122,26 @@ def route(d,request):
         trust=json.loads(TRUST.read_text())
         approval=verify_token(request['token'],trust,identity)
         source,current,observed=state(d,project,target)
+        if plan.get('requestId') and plan['classification']=='backup':
+            from data_operations import Host
+            observed=Host(d,project,target).approval_observed()
+        if plan['classification']=='data-migration':
+            from data_operations import DataExecutor,evidence,completed,Host
+            observed=Host(d,project,target).approval_observed()
+            if store.path(identity,'.resolution.json').exists():raise ValueError('RESOLVED_PLAN_REQUIRES_NEW_APPROVAL')
+            previous=evidence(store,plan);journal=store.status(identity)
+            if journal['status']!='prepared':
+                if not completed(plan,previous):raise ValueError('READBACK_REQUIRED')
+                return store.apply(identity,approval,observed,{name:lambda _:None for name in plan['operations']},{name:lambda _:True for name in plan['operations']})
+            if previous:raise ValueError('READBACK_REQUIRED')
+            data=DataExecutor(d,store,fd,plan)
+            try:
+                return store.apply(identity,approval,observed,{'backup':data.backup,'migrate':data.migrate,'verify':data.verify},{})
+            finally:
+                data.close()
+                if data.data['status']=='failed':
+                    journal=store.status(identity);journal.update(status='failed',active=None)
+                    atomic(store.path(identity,'.journal.json'),journal)
         executor=Executor(d,store,fd,plan)
         return store.apply(identity,approval,observed,
                            {'configure':executor.configure,'deploy':executor.deploy,'check':executor.check,'backup':executor.recover,'restore':executor.recover,'controller':executor.controller},
@@ -180,6 +231,9 @@ class Executor:
         return str(installer.ROOT/plan['bundleChecksum']) in installer.DISPATCHER.read_text()
 
     def recover(self,plan):
+        if plan.get('requestId'):
+            from data_operations import quiet_database
+            quiet_database(self.store,plan['environment'],plan['recoveryRequest']['destination'])
         local_module('recovery').execute(plan,self.d)
 
     def configured(self,plan):
@@ -245,18 +299,35 @@ class Executor:
 
 
 def recovery_plan(d,store,request):
+    if request.get('requestId'):
+        import uuid
+        if str(uuid.UUID(request['requestId']))!=request['requestId']:raise ValueError('INVALID_REQUEST_ID')
+        request_path=store.root/('request-'+request['requestId']+'.json')
+        if request_path.exists():
+            previous=json.loads(request_path.read_text())
+            if previous['request']!=request:raise ValueError('REQUEST_ID_REUSED')
+            store.save(previous['envelope']);return dict(version=2,planId=previous['envelope']['digest'],**previous['envelope'])
     source,config,observed=state(d,request['project'],request['environment'])
     target='production' if request['environment']=='prod' else 'staging'
     current=RELEASES/request['project']/target/'current/compose.env'
     d.trusted(current.resolve())
     values=dict(line.split('=',1) for line in current.read_text().splitlines() if '=' in line)
     destination=request['destination'] or config['runtime']['MONGODB_DATABASE']
+    if request.get('requestId'):
+        from data_operations import quiet_database
+        quiet_database(store,request['environment'],destination)
     if request['action']=='restore' and not request['destination']:raise ValueError('EXPLICIT_RECOVERY_DESTINATION_REQUIRED')
     candidate=dict(project=request['project'],environment=request['environment'],sourceCommit=values['RELEASE_COMMIT'],
         image=values['IMAGE_DIGEST'],bundleChecksum=observed['installedRevision'],configurationHash=observed['configurationHash'],
         classification=request['action'],changedSettings=[],credentialReferences=['RECOVERY_CONFIGURATION'],
         recoveryRequest={'backupId':request['backupId'],'destination':destination})
-    envelope=prepare(candidate,observed);identity=store.save(envelope)
+    if request.get('requestId'):candidate['requestId']=request['requestId']
+    if request.get('requestId'):
+        from data_operations import Host
+        observed=Host(d,request['project'],request['environment']).approval_observed()
+    envelope=prepare(candidate,observed)
+    if request.get('requestId'):atomic(request_path,{'request':request,'envelope':envelope})
+    identity=store.save(envelope)
     return dict(version=2,planId=identity,**envelope)
 
 

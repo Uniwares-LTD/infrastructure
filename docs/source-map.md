@@ -12,10 +12,16 @@ boundaries; [inventory](inventory/srv1.md) owns dated host facts; [operations](o
 owns installation and recovery procedures; application repositories own serving release identities and functional acceptance. [Implementation plan](implementation-plan.md)
 retains accepted milestones. [Provider access](provider-access.md) owns credential references.
 
-The [data operations proposal](operations.md#proposed-reusable-backup-and-migration-workflows)
-links to the shared Unibase #62 specification. It records future Infrastructure
-responsibilities for approvals, execution and shared status outputs; the current stage
-adds documentation only, not migration execution, APIs or UI.
+[Data operations](operations.md#reusable-backup-and-migration-workflows) own the
+configured backup/migration runbook. [data_operations.py](../scripts/data_operations.py)
+implements static catalog/reporting, exact preparation, execution and authoritative
+activation evidence; [recovery.py](../scripts/recovery.py) owns archive creation/retrieval.
+The [root acknowledgment utility](../scripts/data-operation-resolution.py) inspects and
+settles original journals without migrations/restores/restarts. The
+[activation gate](../scripts/data-operation-gate.py) runs immediately before app startup
+under the inherited application lock. The [trusted probe](../scripts/data-operation-probe.cjs)
+uses Node/MongoDB in the currently approved image. Mirrored report fixtures and disposable
+unit tests verify contracts; source validation is separate from installation/live acceptance.
 
 ## Commands
 

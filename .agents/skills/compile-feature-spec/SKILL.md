@@ -1,6 +1,6 @@
 ---
 name: compile-feature-spec
-description: "Turns an unclear feature, documentation or integration request into a bounded, implementation-ready specification without changing code. Use when a request is vague, before building a feature, or when asked to scope, spec or plan work."
+description: "Produces bounded specs, PRDs and implementation plans without implementing the change. Use when consequential requirements are unclear, a medium or large task needs planning, or the user asks to scope, spec or plan work; not for obvious small changes or casual questions."
 ---
 
 Use the task's existing Handbook path and full revision. Only if no baseline is
@@ -13,4 +13,4 @@ through the launcher for filesystem assets. Never substitute the mutable checkou
 Retain path/revision in handoffs and resume summaries. If lost, recover from context
 first; otherwise establish a new baseline and report the discontinuity.
 If unavailable, continue under local guidance and pause only dependent decisions.
-<!-- handbook-managed:d4f8678437e25a32f276141750b4e8358647259cbcc1fe385492b4330a502878 -->
+<!-- handbook-managed:a8cc5bd0167dab1e34c07f7a12cdf2e8fb5ccfecda5d47b2714b27a7e0bd6605 -->

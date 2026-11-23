@@ -9,9 +9,9 @@ import re
 import time
 
 ISSUER='https://token.actions.githubusercontent.com'
-CAPABILITIES=['operation-lock-v1','plans-v2','github-oidc-v1','image-retention-v1']
+CAPABILITIES=['operation-lock-v1','plans-v2','github-oidc-v1','image-retention-v1','data-operations-v1']
 OPERATIONS={'image-only':['deploy','check'], 'host-configuration':['configure','deploy','check'],
-            'controller':['controller','check'], 'backup':['backup'], 'restore':['restore'], 'provider':[], 'data-migration':[]}
+            'controller':['controller','check'], 'backup':['backup'], 'restore':['restore'], 'provider':[], 'data-migration':['backup','migrate','verify']}
 
 
 def canonical(value):
@@ -40,6 +40,18 @@ def prepare(candidate,observed):
             raise ValueError('EXPLICIT_BACKUP_ID_REQUIRED')
         if candidate['classification']=='backup' and recovery['backupId'] is not None:
             raise ValueError('INVALID_BACKUP_REQUEST')
+    if isinstance(candidate,dict) and 'requestId' in candidate:
+        import uuid
+        required.add('requestId')
+        try:
+            if str(uuid.UUID(candidate['requestId']))!=candidate['requestId']:raise ValueError()
+        except (ValueError,TypeError,AttributeError):raise ValueError('INVALID_REQUEST_ID') from None
+    if isinstance(candidate,dict) and candidate.get('classification')=='data-migration':
+        required.update({'migrationRequest','requestId'})
+        request=candidate.get('migrationRequest')
+        if not isinstance(request,dict) or set(request)!={'database','manifestDigest','ledgerDigest','pending','backupPolicy'} or not re.fullmatch('[A-Za-z0-9_]{1,64}',request.get('database','')) or not hex_value(request.get('manifestDigest'),64) or not hex_value(request.get('ledgerDigest'),64) or request.get('backupPolicy')!={'mode':'create','verification':'archive'}:raise ValueError('INVALID_MIGRATION_REQUEST')
+        pending=request['pending']
+        if not isinstance(pending,list) or not pending or len(pending)>1000 or any(not isinstance(row,dict) or set(row)!={'id','checksum'} or not isinstance(row['id'],str) or not re.fullmatch(r'(core|[a-z][a-z0-9-]{1,39}):\d{4}-[a-z0-9-]+',row['id']) or not hex_value(row['checksum'],64) for row in pending) or len({row['id'] for row in pending})!=len(pending):raise ValueError('INVALID_MIGRATION_REQUEST')
     if not isinstance(candidate,dict) or set(candidate)!=required:
         raise ValueError('INVALID_PLAN')
     if not re.fullmatch(r'[a-z][a-z0-9-]{2,39}',candidate['project']) or candidate['environment'] not in ('staging','prod'):
