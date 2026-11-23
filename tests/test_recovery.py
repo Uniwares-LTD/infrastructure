@@ -31,7 +31,7 @@ class RecoveryTests(unittest.TestCase):
     def run(args,env=None):
      calls.append(args)
      self.assertNotIn('synthetic-password',' '.join(args));self.assertNotIn('synthetic-secret',' '.join(args))
-     if 'ps' in args:return b'app\nworker\n'
+     if 'ps' in args:return b'app\nworker\ningress\n'
      if args[0]=='mongodump':
       archive=Path(next(x.split('=',1)[1] for x in args if x.startswith('--archive=')));archive.write_bytes(b'synthetic MongoDB and GridFS archive')
       return b''
@@ -61,8 +61,11 @@ class RecoveryTests(unittest.TestCase):
      else:recovery.execute(plan,d)
     self.assertEqual(next(c for c in calls if 'stop' in c)[-3:],['stop','app','worker'])
     if failure:
-     self.assertFalse(any('start' in c for c in calls))
-    else:self.assertEqual(calls[-1][-3:],['start','app','worker'])
+     self.assertFalse(any('start' in c or 'nginx' in c for c in calls))
+    else:
+     self.assertEqual(calls[-4][-3:],['start','app','worker'])
+     self.assertEqual(calls[-2][-5:],['exec','-T','ingress','nginx','-t'])
+     self.assertEqual(calls[-1][-6:],['exec','-T','ingress','nginx','-s','reload'])
     result=json.loads((state/'fixture/operation-plans'/(digest(plan)+'.recovery.json')).read_text())
     self.assertEqual(result['backupId'],('a' if action=='restore' else 'b')*64)
     if failure:
@@ -72,3 +75,20 @@ class RecoveryTests(unittest.TestCase):
      self.assertEqual(result['preRestoreBackupId'],'b'*64)
      self.assertTrue(any('--nsTo=fixture_'+target+'_rehearsal_test.*' in c for c in calls))
     self.assertFalse(any('forget' in c or 'prune' in c for c in calls))
+
+ def test_resume_only_refreshes_running_ingress_after_the_app_restarts(self):
+  session = recovery.BackupSession.__new__(recovery.BackupSession)
+  session.compose = ['compose']
+  for writers, services in (([], b''), (['worker'], b'ingress'), (['app'], b'app')):
+   with self.subTest(writers=writers, services=services), patch.object(recovery, 'run', return_value=services) as run:
+    session.resume_writers(writers)
+    self.assertFalse(any('nginx' in call.args[0] for call in run.call_args_list))
+
+ def test_invalid_ingress_configuration_prevents_reload(self):
+  session = recovery.BackupSession.__new__(recovery.BackupSession)
+  session.compose = ['compose']
+  responses = [b'', b'app\ningress', ValueError('invalid ingress configuration')]
+  with patch.object(recovery, 'run', side_effect=responses) as run:
+   with self.assertRaisesRegex(ValueError, 'invalid ingress'):
+    session.resume_writers(['app'])
+   self.assertFalse(any('reload' in call.args[0] for call in run.call_args_list))

@@ -35,10 +35,11 @@ class DataTests(unittest.TestCase):
   with self.assertRaises(ValueError):data.catalog({**manifest,'command':'no'},'fixture')
 
  def test_executor_success_backup_failure_interruption_and_failed_final_copy(self):
-  for failure in (None,'backup','response','health','report'):
+  from recovery import BackupSession
+  for failure in (None,'backup','response','health','report','ingress'):
    with self.subTest(failure=failure),tempfile.TemporaryDirectory() as temp:
     root=Path(temp);(root/'fixture').mkdir();store=PlanStore(root/'fixture/plans');env=plan();key=store.save(env);original=env['plan']
-    state={'ledger':[],'running':['app','worker'],'messages':[]}
+    state={'ledger':[],'running':['app','worker'],'messages':[],'ingress_refreshed':False}
     class Host:
      def __init__(self,*args):self.database='fixture_staging';self.observed=original['expected']
      def serving(self):return {"imageMatches":True,"ready":True}
@@ -48,13 +49,19 @@ class DataTests(unittest.TestCase):
       return state['ledger'] if action=='ledger' else {'recorded':True}
     class Session:
      def __init__(self,*args):self.compose=['compose']
-     def writers(self):return sorted(state['running'])
+     writers = BackupSession.writers
+     running_services = BackupSession.running_services
+     resume_writers = BackupSession.resume_writers
      def backup(self,database):
       if failure=='backup':raise ValueError('backup failure')
       return dict(backupId='2'*64,database=database,sha256='3'*64,verified=True)
     def run(args,*_):
      if 'stop' in args:state['running']=[]
      if 'start' in args:state['running']=['app','worker']
+     if 'ps' in args:return ('\n'.join(state['running']+['ingress'])).encode()
+     if args[-2:]==['-s','reload']:
+      if failure=='ingress':raise ValueError('reload failed')
+      state['ingress_refreshed']=True
     class Process:
      pid=99999999;returncode=0
      def __init__(self):self.stdin=io.BytesIO();self.stdout=io.BytesIO()
@@ -67,14 +74,14 @@ class DataTests(unittest.TestCase):
      if value['type']=='verify' and failure=='response':raise ValueError('lost response')
      if value['type']=='completed':state['ledger']=LEDGER
      return value
-    d=SimpleNamespace(STATE=root,ENV={},execute_with_lock=lambda *args:1 if failure=='health' else 0)
+    d=SimpleNamespace(STATE=root,ENV={},execute_with_lock=lambda *args:0 if state['ingress_refreshed'] and failure!='health' else 1)
     with patch.object(data,'Host',Host),patch('recovery.BackupSession',Session),patch('recovery.run',run),patch.object(data,'command',return_value=b''),patch.object(data.DataExecutor,'start',start),patch.object(data.DataExecutor,'receive',receive):
      executor=data.DataExecutor(d,store,3,original)
      try:
       try:store.apply(key,'4'*64,original['expected'],{'backup':executor.backup,'migrate':executor.migrate,'verify':executor.verify},{})
       finally:executor.close()
      except ValueError:
-      self.assertIn(failure,('backup','response','health'))
+      self.assertIn(failure,('backup','response','health','ingress'))
      result=data.evidence(store,original)
      if failure in (None,'report'):
       self.assertTrue(data.completed(original,result));self.assertEqual(state['running'],['app','worker'])
@@ -83,7 +90,7 @@ class DataTests(unittest.TestCase):
       self.assertFalse(result['writeIntent']);self.assertEqual(result['status'],'failed');self.assertEqual(state['running'],['app','worker'])
      else:
       self.assertTrue(result['writeIntent']);self.assertEqual(result['status'],'unknown')
-      self.assertEqual(data.activation(store,MANIFEST,LEDGER if failure=='health' else [],'staging','fixture_staging')['activationDecision'],'blocked-recovery')
+      self.assertEqual(data.activation(store,MANIFEST,LEDGER if failure in ('health','ingress') else [],'staging','fixture_staging')['activationDecision'],'blocked-recovery')
       if failure=='response':self.assertEqual(state['running'],[])
 
  def test_resolution_binds_original_history_rejects_drift_and_tamper_and_is_idempotent(self):

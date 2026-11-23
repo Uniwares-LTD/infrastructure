@@ -82,9 +82,22 @@ class BackupSession:
         self.mongo=self.directory/'mongo.yml'
         self.mongo.write_text('uri: '+json.dumps(config['mongoUri'])+'\n');self.mongo.chmod(0o600)
 
+    def running_services(self):
+        return set(run(self.compose + ['ps', '--status', 'running', '--services']).decode().split())
+
     def writers(self):
-        running=run(self.compose+['ps','--status','running','--services']).decode().split()
-        return sorted(name for name in ('app','worker','ai-worker') if name in running)
+        return sorted(self.running_services() & {'app', 'worker', 'ai-worker'})
+
+    def resume_writers(self, writers):
+        if not writers:
+            return
+        run(self.compose + ['start', *writers])
+        if 'app' in writers and 'ingress' in self.running_services():
+            # The running Nginx resolves its app upstream on configuration load.
+            # Docker may assign a different address when the app restarts.
+            nginx = self.compose + ['exec', '-T', 'ingress', 'nginx']
+            run(nginx + ['-t'])
+            run(nginx + ['-s', 'reload'])
 
     def retrieve(self,snapshot,database,expected_hash=None):
         if not re.fullmatch('[a-f0-9]{64}',snapshot or ''):raise ValueError('EXPLICIT_BACKUP_ID_REQUIRED')
@@ -161,4 +174,5 @@ def execute(plan,d):
                 result={'backupId':snapshot,'destination':destination,'preRestoreBackupId':prior}
             atomic(result_path,result)
         finally:
-            if writers and (not restore_started or restore_completed):run(session.compose+['start',*writers])
+            if not restore_started or restore_completed:
+                session.resume_writers(writers)

@@ -311,9 +311,8 @@ class DataExecutor:
         self.data.update(applied=expected,verification=expected,warnings=[w for row in result['verification'] for w in row['warnings']]);self.save()
 
     def verify(self,plan):
-        from recovery import run
         self.phase('health')
-        if self.data['writers']:run(self.session.compose+['start',*self.data['writers']])
+        self.session.resume_writers(self.data['writers'])
         self.data['writersRestored']=self.session.writers()==self.data['writers'];self.save()
         self.data['health']=self.d.execute_with_lock(dict(version=2,project=plan['project'],environment=plan['environment'],action='check',configurationHash=plan['configurationHash']),self.fd,min(1200,self.remaining()))==0
         if not self.data['writersRestored'] or not self.data['health']:raise ValueError('READBACK_REQUIRED')
@@ -352,7 +351,7 @@ class DataExecutor:
                     except Exception:pass
                 if not self.data['writeIntent'] and clean and self.session:
                     try:
-                        if self.data['writers']:recovery.run(self.session.compose+['start',*self.data['writers']])
+                        self.session.resume_writers(self.data['writers'])
                         self.data['writersRestored']=self.session.writers()==self.data['writers']
                         self.data['health']=self.d.execute_with_lock(dict(version=2,project=self.plan['project'],environment=self.plan['environment'],action='check',configurationHash=self.plan['configurationHash']),self.fd,max(0.01,min(120,self.hard_deadline-time.monotonic())))==0
                     except Exception:pass
