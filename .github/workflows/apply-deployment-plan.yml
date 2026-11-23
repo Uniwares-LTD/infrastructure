@@ -38,7 +38,7 @@ jobs:
           [[ "$PLAN_ID" =~ ^[a-f0-9]{64}$ && "$PLAN_ID" == "$PLAN_DIGEST" ]]
   apply:
     needs: validate
-    uses: Uniwares-LTD/infrastructure/.github/workflows/apply-plan-executor.yml@00bf4d8353ddfbf8deaa38db22f040c9d948750f
+    uses: Uniwares-LTD/infrastructure/.github/workflows/apply-plan-executor.yml@149b02c261e2a41799b8a94e9cb3c9738d16787e
     with:
       project: ${{ inputs.project }}
       environment: ${{ inputs.environment }}
