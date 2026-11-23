@@ -161,7 +161,7 @@ def require_lock_capability(source):
         raise Rejection('UNSUPPORTED_CAPABILITY') from None
     if contract.get('version') != 1 or 'operation-lock-v1' not in contract.get('requiredCapabilities', []):
         raise Rejection('UNSUPPORTED_CAPABILITY')
-    supported = {'operation-lock-v1', 'image-retention-v1'}
+    supported = {'operation-lock-v1', 'image-retention-v1', 'data-operations-v1'}
     if not set(contract.get('requiredCapabilities', [])) <= supported:
         raise Rejection('UNSUPPORTED_CAPABILITY')
     if 'image-retention-v1' in contract['requiredCapabilities']:
@@ -204,11 +204,14 @@ def execute_locked(request):
         return execute_with_lock(request, fd)
 
 
-def execute_with_lock(request, fd):
+def execute_with_lock(request, fd, timeout=OPERATION_TIMEOUT):
     source, _, _, _ = installed_state(request)
     require_lock_capability(source)
     args = command(request)
     env = dict(ENV, UNIWARES_OPERATION_LOCK_FD=str(fd), UNIWARES_DISPATCHED='1')
+    if 'data-operations-v1' in json.loads((source / 'deploy/contract.json').read_text()).get('requiredCapabilities', []):
+        gate=Path(__file__).with_name('data-operation-gate.py');trusted(gate)
+        env['UNIWARES_DATA_GATE']=str(gate)
     def interrupted(signum, frame):
         raise InterruptedError('Operation interrupted')
     previous = {sig: signal.signal(sig, interrupted) for sig in (signal.SIGTERM, signal.SIGINT)}
@@ -217,7 +220,7 @@ def execute_with_lock(request, fd):
         record_operation(request, 'unknown')
         process = subprocess.Popen(args, cwd='/', env=env, stdin=subprocess.DEVNULL,
                                    pass_fds=(fd,), start_new_session=True)
-        status = process.wait(timeout=OPERATION_TIMEOUT)
+        status = process.wait(timeout=timeout)
         record_operation(request, 'completed' if status == 0 else 'failed')
         if status == 0 and request['action'] in ('deploy', 'rollback') and 'image-retention-v1' in json.loads((source / 'deploy/contract.json').read_text()).get('requiredCapabilities', []):
             # Readiness and the application ledger commit precede optional maintenance.
@@ -255,7 +258,7 @@ def execute_with_lock(request, fd):
 
 def handle(request):
     try:
-        if isinstance(request, dict) and type(request.get('version')) is int and request['version'] == 2 and request.get('action') in ('plan','apply','status','capabilities','maintenance','backup','restore'):
+        if isinstance(request, dict) and type(request.get('version')) is int and request['version'] == 2 and request.get('action') in ('plan','apply','status','capabilities','maintenance','backup','restore','migrations','migrate'):
             directory = Path(__file__).resolve().parent
             trusted(directory)
             sys.path.insert(0,str(directory))
@@ -263,7 +266,7 @@ def handle(request):
             try:
                 result=operation_engine.route(sys.modules[__name__],request)
             except ValueError as error:
-                allowed={'OWNER_ACTION_REQUIRED','HOST_STATE_CHANGED','READBACK_REQUIRED','APPROVAL_REPLAY','ADMIN_NOT_ENROLLED','APPROVAL_EXPIRED','APPROVAL_IDENTITY_REJECTED','CONTROLLER_CHANGED','PLAN_DIGEST_MISMATCH','PLAN_IDENTITY_MISMATCH','OTHER_ENVIRONMENT_CHANGED'}
+                allowed={'OWNER_ACTION_REQUIRED','HOST_STATE_CHANGED','READBACK_REQUIRED','APPROVAL_REPLAY','ADMIN_NOT_ENROLLED','APPROVAL_EXPIRED','APPROVAL_IDENTITY_REJECTED','CONTROLLER_CHANGED','PLAN_DIGEST_MISMATCH','PLAN_IDENTITY_MISMATCH','OTHER_ENVIRONMENT_CHANGED','HOST_STATE_CHANGED','UNSUPPORTED_CAPABILITY','RESOLVED_PLAN_REQUIRES_NEW_APPROVAL','REQUEST_ID_REUSED'}
                 code=str(error) if str(error) in allowed else 'OPERATION_REJECTED'
                 raise Rejection(code) from None
             print(json.dumps(result,separators=(',',':')))

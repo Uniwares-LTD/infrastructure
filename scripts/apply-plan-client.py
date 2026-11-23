@@ -32,16 +32,42 @@ def main():
         if '\n' in host_key or not re.fullmatch(r'(ssh-ed25519|ecdsa-sha2-nistp256|ssh-rsa) [A-Za-z0-9+/=]+(?: [^\r\n]+)?',host_key):
             raise ValueError('INVALID_PINNED_HOST_KEY')
         known.write_text(host+' '+host_key+'\n');known.chmod(0o600)
-        with tempfile.TemporaryFile() as output:
-            result=subprocess.run(['ssh','-i',str(key),'-o','IdentitiesOnly=yes','-o','BatchMode=yes',
-                '-o','StrictHostKeyChecking=yes','-o','UserKnownHostsFile='+str(known),
-                '-o','ConnectTimeout=10','uniwares-deploy-user@'+host,'operate'],
-                input=json.dumps(request).encode(),stdout=output,stderr=subprocess.DEVNULL,timeout=1300)
-            if result.returncode:raise ValueError('APPLY_FAILED_OR_UNKNOWN')
-            output.seek(0);raw=output.read(65537)
-        if len(raw)>65536:raise ValueError('INVALID_RESPONSE')
-        status=json.loads(raw.splitlines()[-1])
-        if status.get('planId')!=args.plan_id or status.get('status')!='completed':raise ValueError('OUTCOME_UNKNOWN')
+        transport=['ssh','-i',str(key),'-o','IdentitiesOnly=yes','-o','BatchMode=yes','-o','StrictHostKeyChecking=yes','-o','UserKnownHostsFile='+str(known),'-o','ConnectTimeout=10','uniwares-deploy-user@'+host,'operate']
+        observed=subprocess.run(transport,input=json.dumps(dict(version=2,action='status',project=args.project,environment=args.environment,planId=args.plan_id)).encode(),stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,timeout=60)
+        if observed.returncode or len(observed.stdout)>65536:raise ValueError('STATUS_UNAVAILABLE')
+        is_data=json.loads(observed.stdout).get('kind')=='data-migration'
+        try:
+            with tempfile.TemporaryFile() as output:
+                result=subprocess.run(transport,input=json.dumps(request).encode(),stdout=output,stderr=subprocess.DEVNULL,timeout=3700 if is_data else 1300)
+                if result.returncode:raise ValueError('APPLY_FAILED_OR_UNKNOWN')
+                output.seek(0);raw=output.read(65537)
+            if len(raw)>65536:raise ValueError('INVALID_RESPONSE')
+            status=json.loads(raw.splitlines()[-1])
+            if status.get('planId')!=args.plan_id or status.get('status')!='completed':raise ValueError('OUTCOME_UNKNOWN')
+        finally:
+            if is_data:
+                try:
+                    status_request=dict(version=2,action='status',project=args.project,environment=args.environment,planId=args.plan_id)
+                    def read_status(payload):
+                        response=subprocess.run(transport,input=json.dumps(payload).encode(),stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,timeout=60)
+                        if response.returncode or len(response.stdout)>65536:raise ValueError('STATUS_UNAVAILABLE')
+                        return json.loads(response.stdout)
+                    observed=read_status(status_request);report=observed.get('dataOperation')
+                    if report:
+                        while report.get('nextOffset') is not None:
+                            page=read_status({**status_request,'offset':report['nextOffset']})['dataOperation']
+                            if any(page[key]!=report[key] for key in ('operationId','observedAt','planDigest')):raise ValueError('STATUS_CHANGED')
+                            for key in ('pending','applied','verification'):report[key].extend(page[key])
+                            report['nextOffset']=page['nextOffset']
+                        destination=Path(os.environ.get('RUNNER_TEMP',temp))/'data-operation-report.json'
+                        destination.write_text(json.dumps(observed,indent=2)+'\n')
+                        fields=dict(operation_id=report['operationId'],plan_digest=report['planDigest'],source_commit=report['sourceCommit'],image=report['image'],deployment_outcome=report['deploymentOutcome'],migration_outcome=report['migrationOutcome'],backup_id=(report.get('backup') or {}).get('backupId',''),report_artifact='data-operation-report.json',activation_decision=observed.get('activationDecision','owner-action-required'),next_action=observed.get('nextAction','Inspect authoritative status before retrying.'))
+                        if os.environ.get('GITHUB_OUTPUT'):
+                            with open(os.environ['GITHUB_OUTPUT'],'a') as stream:
+                                for key,value in fields.items():
+                                    if '\n' in value or '\r' in value:raise ValueError('INVALID_OUTPUT')
+                                    stream.write(key+'='+value+'\n')
+                except Exception:pass  # An unavailable final report is never fabricated.
         print('Approved plan completed: '+args.plan_id)
 
 if __name__=='__main__':

@@ -641,6 +641,99 @@ reviewed retention work. Destructive migrations are not implemented by this exec
 their named owner must provide a fresh verified backup and explicit recovery acceptance.
 Ordinary releases use backward-compatible migrations and never restore data automatically.
 
+<a id="proposed-reusable-backup-and-migration-workflows"></a>
+
+### Reusable backup and migration workflows
+
+[Unibase #62's implementation contract](https://github.com/Uniwares-LTD/unibase/blob/main/docs/features/deployment-data-operations/implementation-plan.md#implementation-contract)
+is implemented in the local task branches. These source changes are not installed on
+srv1. Existing dated host/controller identities remain unchanged. Publication, immutable
+workflow/source pin updates, separately approved controller/app-control installation,
+actual approval-claim acceptance and isolated target restore rehearsal precede live use.
+Production activation and provider/trust-member changes remain outside this work.
+
+`data-operations-v1` extends version 2 with fixed `migrations` (read-only report) and
+`migrate` (prepare only) actions. Existing v1/v2 shapes remain valid. New backup and
+migration preparations bind a canonical request UUID; same-input retry returns the
+same immutable plan, different inputs are rejected, and fresh requested work uses a
+fresh identity. A no-pending report creates neither plan nor backup, after checking
+unresolved recovery first. Full approval batches are never truncated to fit transport.
+
+For new data-capability backup/migration plans, the existing
+`expected.configurationHash` binds public configuration plus protected runtime,
+recovery/password files and controller Python/probe bytes. Preparation and apply
+recompute it; drift requires a fresh reviewed plan. Top-level protocol
+`configurationHash` remains the public configuration hash. Only digests are exposed;
+no private settings are serialized and no second approval engine is introduced.
+
+Preparation anonymously pulls the exact configured repository digest, checks OCI
+revision/source labels, and extracts/hash-checks static manifest/runner bytes from an
+unstarted container. The installed Node/MongoDB probe runs in the currently approved
+image with a fixed overridden entrypoint; unavailable executable/module prerequisites
+need owner action. No candidate code executes before approval and no driver is installed
+as a fallback. Restricted report/status details are paged; clients retain complete
+reviewed details as artifacts.
+
+Use the application's report/prepare/status workflow and this repository's existing
+Apply deployment plan workflow on the reviewed published `main`, with configured
+project/environment and exact plan ID/digest. Publishing a new executor requires updating
+its immutable reusable-workflow and checkout pins and validating the corresponding
+OIDC executor identity under separate installation authority. Preserve enrolled actors.
+No extra apply workflow or approval service is added.
+
+The executor holds application lock first, then one renewable migration lease through
+backup and apply. It journals the original writer set, stops it only after runner
+readiness, verifies retrieval and identity/hash of the whole-database/GridFS archive,
+then persists backup and application-data write intent **before** sending the
+`backup-verified` acknowledgment. The runner has private pipes, configured networking,
+non-root execution and no host-control mounts/socket. Each phase is capped at 30 minutes;
+the total operation is capped at 60 minutes, reserving bounded finalization time.
+Timeout/interruption kills/reaps children and removes the named runner before unlock.
+Uncertain writes never restart writers automatically. A proven pre-write failure with
+restored writers and healthy serving state is failed-but-safe, not a forced root task.
+
+`data-operation-resolution.py` is one root-only utility in the installed reviewed
+controller bundle. It accepts only configured project/environment and original plan ID:
+
+```text
+python3 -IB CONTROLLER/scripts/data-operation-resolution.py --project PROJECT --environment ENVIRONMENT --plan-id PLAN_ID --inspect
+python3 -IB CONTROLLER/scripts/data-operation-resolution.py --project PROJECT --environment ENVIRONMENT --plan-id PLAN_ID --record --expected-state-hash STATE_HASH --disposition safe-to-retry --operator OPERATOR --reason REASON
+```
+
+`CONTROLLER` is the immutable installed bundle from the inventory/registration; obtain
+all capitalized identities from that installation and the original journal/inspection,
+not from arbitrary paths or database inputs. Root recovery must be separately authorized.
+The utility never migrates, restores a database or restarts services. Inspect original
+plan/journal/image/ledger/backup, predecessor process/container, writers and health; it
+acquires the existing database lease and runs only original-image read-only verifiers.
+After any separately authorized manual recovery, repeat inspection and record its exact
+state hash. The operator/reason explicitly attest a safe serving baseline for any
+unrecorded partial work. `safe-to-retry` permits a freshly approved remaining batch;
+when all original IDs were written, use `verified-complete`, requiring full verifier,
+backup, writer and health proof. Missing evidence or drift refuses acknowledgment.
+The atomic root-owned mode-0600 resolution binds original identities and results,
+excludes sampling/own-lease renewal times, preserves original history, reads back an
+identical retry and rejects conflicting replacement or original-plan reapplication.
+
+Both routine and protected activation use the same authoritative gate immediately
+before candidate startup under the inherited application lock. Required pending IDs,
+unresolved writes or missing/corrupt verifier/recovery evidence block activation even
+when the ledger has zero pending entries. Only newly recorded IDs in this flow require
+its host verifier evidence; existing ledger records remain the reviewed legacy baseline.
+A terminal MongoDB report copy is optional evidence, never approval or activation
+membership. Missing copies do not override complete host evidence; completed-looking
+copies cannot override an unresolved host journal. Original failed/unknown outcomes
+remain unchanged when resolution metadata is copied. No periodic synchronization,
+retention job, generic resume engine or verification-only apply plan is introduced.
+
+Operator intervention for publication: publish reviewed Handbook first, regenerate
+consumer references from that revision, then publish pinned-compatible Infrastructure
+and application artifacts. Separately authorize/install the controller and app-control
+capability before enabling clients. Verify actual approval claims and target recovery
+prerequisites/restore rehearsal. Finally authorize a fresh Unibase staging readback/run
+and record backup, ledger, health and affected-flow evidence. Do not repeat completed
+bootstrap or treat source checks as installed/live acceptance.
+
 ### Rollout acceptance and ownership
 
 Install/verify the compatible controller first, then the projected permission correction

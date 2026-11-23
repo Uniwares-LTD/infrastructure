@@ -38,3 +38,8 @@ Deployment changes must classify image, host configuration, controller, provider
 Image-retention changes preserve app-then-image lock ordering, current/previous and unresolved-plan protection, root-owned enrollment and separate maintenance outcomes. Preview and operator authorization precede live deletion; timer installation does not authorize activation.
 
 For operational documentation, keep current procedures separate from dated evidence. Infrastructure inventory owns installed host/configuration identities and capacity; application deployment guides own serving release identities and acceptance. Documentation-only publication must state that completed installations are not repeated. Inspect partial installation state before retrying, and verify executable prerequisites rather than module presence alone.
+
+The optional operate-data skill routes configured reporting/preparation and approved
+execution through operations.md. Recovery acknowledgment is root-only, never an app
+or diagnostics action. App-control/data capability installation, executor pin/claim
+acceptance and live recovery rehearsals require separate operator authorization.

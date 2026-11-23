@@ -524,6 +524,8 @@ class Maintenance:
 
 def supervise(args, app_fd, image_fd):
     env = dict(ENV, UNIWARES_OPERATION_LOCK_FD=str(app_fd), UNIWARES_IMAGE_LOCK_FD=str(image_fd))
+    if os.environ.get('UNIWARES_DISPATCHED')=='1' and os.environ.get('UNIWARES_DATA_GATE'):
+        env['UNIWARES_DATA_GATE']=os.environ['UNIWARES_DATA_GATE']
     if os.environ.get('UNIWARES_DISPATCHED') == '1':
         env['UNIWARES_DISPATCHED'] = '1'
     if os.environ.get('UNIWARES_DISPATCHED') == '1':
