@@ -48,7 +48,11 @@ class RecoveryTests(unittest.TestCase):
       raise ValueError('synthetic partial restore failure')
      if args[:2]==['restic','backup']:
       stored['b'*64]=(Path(args[-2]).read_bytes(),Path(args[-1]).read_bytes())
-      return json.dumps({'message_type':'summary','snapshot_id':'b'*64}).encode()
+      return json.dumps({'message_type':'summary','snapshot_id':'b'*(8 if target=='staging' else 64)}).encode()
+     if args[:2]==['restic','snapshots']:
+      self.assertEqual(args,['restic','snapshots','--json','b'*8])
+      backup=next(c for c in calls if c[:2]==['restic','backup'])
+      return json.dumps([{'id':'b'*64,'paths':backup[-2:],'tags':['fixture-'+target]}]).encode()
      return b''
     d=SimpleNamespace(CONTROL=control,STATE=state,ENV={'PATH':'/usr/bin'},trusted=lambda path:None)
     with patch.object(recovery,'RUNTIME',etc),patch.object(recovery,'RELEASES',releases),patch.object(recovery,'run',run):

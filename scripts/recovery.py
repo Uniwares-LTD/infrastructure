@@ -111,10 +111,28 @@ class BackupSession:
         hashed=file_hash(archive)
         manifest.write_text(json.dumps({'version':1,'project':self.plan['project'],'environment':self.plan['environment'],
             'database':database,'sha256':hashed}))
-        lines=run(['restic','backup','--json','--tag',self.plan['project']+'-'+self.target,str(archive),str(manifest)],self.env).splitlines()
-        summaries=[json.loads(line) for line in lines if json.loads(line).get('message_type')=='summary']
-        if len(summaries)!=1 or not re.fullmatch('[a-f0-9]{64}',summaries[0].get('snapshot_id','')):raise ValueError('BACKUP_ID_UNVERIFIED')
-        snapshot=summaries[0]['snapshot_id'];run(['restic','check'],self.env)
+        tag = self.plan['project'] + '-' + self.target
+        paths = [str(archive), str(manifest)]
+        output = run(['restic', 'backup', '--json', '--tag', tag, *paths], self.env)
+        events = [json.loads(line) for line in output.splitlines()]
+        summaries = [event for event in events if event.get('message_type') == 'summary']
+        snapshot = summaries[0].get('snapshot_id') if len(summaries) == 1 else None
+        if not isinstance(snapshot, str) or not re.fullmatch(r'[a-f0-9]{8}(?:[a-f0-9]{56})?', snapshot):
+            raise ValueError('BACKUP_ID_UNVERIFIED')
+        if len(snapshot) == 8:
+            # Older restic emits a short ID. Resolve it within this repository,
+            # then require the original tag and the two files from this backup.
+            rows = json.loads(run(['restic', 'snapshots', '--json', snapshot], self.env))
+            if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
+                raise ValueError('BACKUP_ID_UNVERIFIED')
+            row = rows[0]
+            full_id = row.get('id')
+            if (not isinstance(full_id, str) or not re.fullmatch(r'[a-f0-9]{64}', full_id)
+                    or not full_id.startswith(snapshot) or sorted(row.get('paths') or []) != sorted(paths)
+                    or tag not in (row.get('tags') or [])):
+                raise ValueError('BACKUP_ID_UNVERIFIED')
+            snapshot = full_id
+        run(['restic', 'check'], self.env)
         self.retrieve(snapshot,database,hashed)
         return {'backupId':snapshot,'database':database,'sha256':hashed,'verified':True}
 
