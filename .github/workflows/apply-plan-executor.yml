@@ -59,7 +59,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Uniwares-LTD/infrastructure
-          ref: db0d885b020bcfebf8fd69fbc536b65965f0767f
+          ref: 8798603fa551ec7331a0c96c8f93e9a928b6e6b6
       - name: Apply the exact approved plan
         id: operation
         env:
