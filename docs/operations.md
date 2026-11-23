@@ -633,7 +633,13 @@ selected archive and remaps namespaces explicitly. Only the configured database 
 its `_rehearsal_NAME` database is allowed. Before the destructive restore starts,
 the status record retains the pre-restore backup ID. If restore fails or is interrupted,
 application writers stay stopped; inspect the unknown outcome and recover explicitly
-before restarting them. Failures before any database write restart the previous writers. Rehearse against a disposable destination
+before restarting them. Failures before any database write restart the previous writers.
+
+When a recovery operation resumes the app writer, the controller validates and reloads
+its running Compose ingress so Nginx resolves the current app address. Other stopped
+services remain stopped. Migration completion still requires the existing readiness check.
+
+Rehearse against a disposable destination
 before production acceptance and verify web, both workers and data afterward.
 
 There are no schedules and no retention/prune operations. Keep backups until separately
