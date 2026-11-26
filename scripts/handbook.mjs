@@ -85,12 +85,34 @@ export function materialize(directory, revision, { origin = handbookOrigin } = {
   return { path: directory, revision, resourcePath: destination };
 }
 
+const sharedStartReads = ['docs/bootstrap.md', 'docs/guidance/communication.md'];
+// The check is often the only start step a session runs, so its output names every start
+// read: shared files at the retained revision, then this repository's own guidance files.
+// Older committed helpers lack mustRead, so the launcher supplies it too.
+function withStartReads(root, result) {
+  if (!result?.revision || !result.path) return result;
+  const local = [];
+  try {
+    const config = JSON.parse(readFileSync(path.join(root, 'handbook.json'), 'utf8'));
+    for (const key of ['guidance', 'sourceMap', 'preferences']) if (typeof config?.[key] === 'string') local.push(config[key]);
+  } catch { /* Readiness reports invalid metadata; the shared reads still apply. */ }
+  const shared = result.mustRead ?? sharedStartReads.map(file => ['git', '-C', result.path, 'show', `${result.revision}:${file}`]);
+  return { ...result, mustRead: [...shared, ...local],
+    next: 'Before the first action: read every mustRead entry (shared commands, then repository files), load the skill for the request in this session, and reply with the communication guide headings.' };
+}
+
 export async function runHandbook(command, { root, directory, force = false, revision, origin = handbookOrigin } = {}) {
   root = path.resolve(root || path.join(path.dirname(fileURLToPath(import.meta.url)), '..'));
   directory = resolveHandbook(root, directory);
   if (!['setup', 'check', 'doctor', 'resources'].includes(command)) throw new Error('Use setup, check, doctor or resources.');
   if (!existsSync(directory)) {
-    if (command !== 'setup') throw new Error('Handbook unavailable. Run handbook:setup; pause only Handbook-dependent decisions.');
+    if (command !== 'setup') {
+      const error = new Error(`HANDBOOK_SETUP_REQUIRED: Handbook unavailable.\nOrigin: ${origin}\nDestination: ${directory}\nAfter approval, run npm run handbook:setup with -- --path set to this destination (quote it for your shell).\nPause only Handbook-dependent decisions.`);
+      error.code = 'HANDBOOK_SETUP_REQUIRED';
+      error.path = directory;
+      error.origin = origin;
+      throw error;
+    }
     mkdirSync(path.dirname(directory), { recursive: true });
     git(path.dirname(directory), 'clone', '--branch', 'main', '--single-branch', origin, directory);
   }
@@ -112,7 +134,7 @@ export async function runHandbook(command, { root, directory, force = false, rev
   const helper = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
   if (typeof helper.refresh !== 'function' || typeof helper.diagnose !== 'function') throw new Error('Incompatible committed helper.');
   helper.validateRevision?.(directory, selected);
-  if (command !== 'doctor') return helper.refresh(directory, { origin, force });
+  if (command !== 'doctor') return withStartReads(root, helper.refresh(directory, { origin, force }));
   const state = helper.diagnose(directory, { origin }), warnings = [];
   let names = sharedSkills;
   const integration = path.join(root, 'handbook.json');

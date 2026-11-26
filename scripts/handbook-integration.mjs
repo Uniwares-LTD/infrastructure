@@ -58,6 +58,11 @@ function document(root, reference) {
 }
 function configAt(root) {
   const config = JSON.parse(read(local(root, 'handbook.json').target));
+  for (const key of ['claudeSessionStartRouting', 'agentsSessionContract']) {
+    if (config[key] !== undefined && (config.kind !== 'consumer' || typeof config[key] !== 'boolean')) {
+      throw new Error(`${key} must be a boolean in consumer handbook.json.`);
+    }
+  }
   if (config.version !== 1 || !['source', 'consumer'].includes(config.kind) || !Array.isArray(config.technologySkills) || config.technologySkills.some(name => typeof name !== 'string' || !/^[a-z0-9-]+$/.test(name))) throw new Error('Invalid handbook.json: require version 1, kind source|consumer, and technologySkills array.');
   return config;
 }
@@ -119,6 +124,13 @@ export function checkReadiness(root) {
     try { metadata(read(local(root, `.agents/skills/${name}/SKILL.md`).target), name); }
     catch (error) { warnings.push(`Skill ${name}: ${error.message}`); }
   }
+  if (config.kind === 'consumer') warnings.push(...bootstrapWarnings(root));
+  if (config.kind === 'consumer') {
+    try { syncClaudeRouting(root, config.claudeSessionStartRouting !== false, { warnings, changed: [] }); }
+    catch (error) { warnings.push(`Claude workflow routing: ${error.message}`); }
+    try { syncSessionContract(root, config.agentsSessionContract !== false, { warnings, changed: [] }); }
+    catch (error) { warnings.push(`Session contract: ${error.message}`); }
+  }
   return { ready: warnings.length === 0, warnings };
 }
 function metadata(text, name) {
@@ -137,9 +149,29 @@ function entry(meta, body) {
   const text = `---\nname: ${meta.name}\ndescription: ${JSON.stringify(meta.description)}\n${meta.argumentHint ? `argument-hint: ${JSON.stringify(meta.argumentHint)}\n` : ''}${meta.userInvocable ? `user-invocable: ${meta.userInvocable}\n` : ''}---\n\n${body}\n`;
   return text + `<!-- handbook-managed:${sha(text)} -->\n`;
 }
-function sharedEntry(meta) {
-  return entry(meta, `Use the task's existing Handbook path and full revision. Only if no baseline is\nrecorded, run \`npm run handbook:check\` (or \`node scripts/handbook.mjs check\`).\nRead \`docs/bootstrap.md\`, \`docs/work-policy.md\` and\n\`.agents/skills/${meta.name}/SKILL.md\` with \`git -C PATH show REVISION:FILE\`.\nRead this project's guidance, source map and preferences declared in \`handbook.json\`.\nResolve all shared references at that same revision; use \`resources --revision SHA\`\nthrough the launcher for filesystem assets. Never substitute the mutable checkout.\nRetain path/revision in handoffs and resume summaries. If lost, recover from context\nfirst; otherwise establish a new baseline and report the discontinuity.\nIf unavailable, continue under local guidance and pause only dependent decisions.`);
+export const bootstrapFile = '.agents/handbook.md';
+const bootstrapSource = 'docs/consumer-bootstrap.md';
+function managed(text) {
+  return text + `<!-- handbook-managed:${sha(text)} -->\n`;
 }
+function bootstrapWarnings(root) {
+  const usesBootstrap = existsSync(path.join(root, '.agents/skills')) &&
+    readdirSync(path.join(root, '.agents/skills'), { withFileTypes: true }).some(item => {
+      if (!item.isDirectory()) return false;
+      const file = local(root, `.agents/skills/${item.name}/SKILL.md`).target;
+      return existsSync(file) && read(file).includes('[Handbook bootstrap](../../handbook.md)');
+    });
+  if (!usesBootstrap) return []; // Legacy consumers keep their self-contained wrappers.
+  const file = local(root, bootstrapFile).target;
+  if (!existsSync(file)) return [`Missing ${bootstrapFile}; restore it from a reviewed snapshot with handbook:sync -- --source SNAPSHOT before using slim entrypoints.`];
+  const match = read(file).match(/^([\s\S]*?)<!-- handbook-managed:([a-f0-9]{64}) -->\n([\s\S]*)$/);
+  if (!match || sha(match[1]) !== match[2]) return [`Customized/unmanaged ${bootstrapFile}; reconcile its bootstrap instructions manually before using slim entrypoints.`];
+  return [];
+}
+function sharedEntry(meta) {
+  return entry(meta, `Read and follow the local [Handbook bootstrap](../../handbook.md).\nUse the task's retained Handbook path and full revision; do not select a new baseline.\nThen read \`.agents/skills/${meta.name}/SKILL.md\` at that revision and follow its\nrelevant references. Shared guidance does not expand the task's authority.`);
+}
+
 function claudeEntry(meta) {
   return entry(meta, `Read and follow the canonical local entrypoint\n[${meta.name}](../../../.agents/skills/${meta.name}/SKILL.md).\nResolve its relative references from that canonical file, not this wrapper.\nFor shared guidance, retain the task's Handbook revision through continuation.\nThis reference grants no hooks, tools, permissions, or delegation authority.`);
 }
@@ -158,28 +190,36 @@ export function syncEntrypoints(root, { write = false, source } = {}) {
   const put = (relative, wanted) => {
     const { target } = local(root, relative);
     const old = existsSync(target) ? read(target) : '';
-    if (old.startsWith(wanted)) return;
+    if (old.startsWith(wanted)) return true;
     warnings.push(`Entrypoint drift: ${relative}`);
-    if (!write) return;
+    if (!write) return false;
     let suffix = '';
     if (old) {
       const match = old.match(/^([\s\S]*?)<!-- handbook-managed:([a-f0-9]{64}) -->\n([\s\S]*)$/);
-      if (!match || sha(match[1]) !== match[2]) { warnings.push(`Preserved customized/unmanaged file: ${relative}; reconcile manually.`); return; }
+      if (!match || sha(match[1]) !== match[2]) { warnings.push(`Preserved customized/unmanaged file: ${relative}; reconcile manually.`); return false; }
       suffix = match[3];
     }
     mkdirSync(path.dirname(target), { recursive: true });
     writeFileSync(target, wanted + suffix);
     changed.push(relative);
+    return true;
   };
   // Consumer upgrades explicitly select a committed resource snapshot as source.
   if (config.kind === 'consumer' && source) {
     source = realpathSync(source);
     const contract = JSON.parse(read(path.join(source, 'handbook-contract.json')));
     if (contract.protocolVersion !== 1) throw new Error('Unsupported source contract.');
+    const bootstrap = path.join(source, bootstrapSource);
+    // Never migrate wrappers unless their prerequisite exists and is intact.
+    const bootstrapText = existsSync(bootstrap) ? read(bootstrap) : '';
+    const bootstrapReady = Boolean(bootstrapText.trim()) && put(bootstrapFile, managed(bootstrapText));
+    if (existsSync(bootstrap) && !bootstrapText.trim()) warnings.push(`Empty ${bootstrapSource}; preserve existing entrypoints and repair the source.`);
+    if (!existsSync(bootstrap)) warnings.push(`Source lacks ${bootstrapSource}; preserve existing entrypoints and use a compatible reviewed snapshot.`);
+    if (!bootstrapReady) warnings.push('Consumer skill migration deferred until the managed bootstrap is synchronized.');
     for (const name of new Set([...core, ...config.technologySkills])) {
       if (!contract.skills.includes(name)) { warnings.push(`Unknown shared skill: ${name}`); continue; }
       const meta = metadata(read(local(source, `.agents/skills/${name}/SKILL.md`).target), name);
-      put(`.agents/skills/${name}/SKILL.md`, sharedEntry(meta));
+      if (bootstrapReady || !write) put(`.agents/skills/${name}/SKILL.md`, sharedEntry(meta));
     }
   }
   const directory = local(root, '.agents/skills').target;
@@ -211,8 +251,147 @@ export function syncEntrypoints(root, { write = false, source } = {}) {
     warnings.push('CLAUDE.md must import @AGENTS.md.');
     if (write) { writeFileSync(claude, '@AGENTS.md\n\n' + old); changed.push('CLAUDE.md'); }
   }
+  if (config.kind === 'consumer') warnings.push(...bootstrapWarnings(root));
   syncGates(root, { write, source: config.kind === 'consumer' ? source : undefined, warnings, changed });
+  if (config.kind === 'consumer') {
+    // Both default on: the guidance must reach a session without a voluntary read.
+    syncClaudeRouting(root, config.claudeSessionStartRouting !== false, { write, source, warnings, changed });
+    syncSessionContract(root, config.agentsSessionContract !== false, { write, source, warnings, changed });
+  }
   return { warnings, changed };
+}
+
+const routingMarker = 'Handbook workflow routing';
+const routingGuide = 'docs/guidance/communication.md';
+const routingLimit = 10000;
+const routingHeading = '## Workflow adherence\n';
+const contractHeading = '## Session contract\n';
+const contractLimit = 1500;
+const guideSection = (text, heading) => text.split(/^(?=#{1,2} )/m).find(part => part.startsWith(heading))?.trim() ?? '';
+const filledSection = (text, heading) => guideSection(text, heading).slice(heading.length).trim().length > 0;
+// Startup context carries the whole guide: session contract, reply format and adherence rules.
+const validRoutingText = text => typeof text === 'string' && text.length + 1 < routingLimit &&
+  filledSection(text, routingHeading);
+
+function routingHook(section) {
+  // The reviewed routing text is data to a fixed Node program, with no shell expansion.
+  return { hooks: [{ type: 'command', command: 'node', args: [
+    '-e', 'process.stdout.write(Buffer.from(process.argv[2], "base64").toString("utf8") + "\\n")',
+    routingMarker + ':' + sha(section), Buffer.from(section).toString('base64')
+  ] }] };
+}
+
+function routingEntry(entry) {
+  return Array.isArray(entry?.hooks) && entry.hooks.some(hook =>
+    Array.isArray(hook?.args) && hook.args.some(arg => typeof arg === 'string' && arg.startsWith(routingMarker + ':')));
+}
+
+function intactRouting(entry) {
+  const encoded = entry?.hooks?.[0]?.args?.[3];
+  if (typeof encoded !== 'string' || encoded.length > routingLimit * 4) return false;
+  const section = Buffer.from(encoded, 'base64').toString('utf8');
+  if (!validRoutingText(section)) return false;
+  const expected = routingHook(section);
+  const hook = entry.hooks[0];
+  return Object.keys(entry).length === 1 && entry.hooks.length === 1 &&
+    Object.keys(hook).length === 3 && hook.type === 'command' && hook.command === 'node' &&
+    JSON.stringify(hook.args) === JSON.stringify(expected.hooks[0].args);
+}
+
+function syncClaudeRouting(root, enabled, { write, source, warnings, changed }) {
+  const relative = '.claude/settings.json';
+  const target = local(root, relative).target;
+  const settings = existsSync(target) ? JSON.parse(read(target)) : {};
+  if (settings.hooks !== undefined && (!settings.hooks || typeof settings.hooks !== 'object' || Array.isArray(settings.hooks))) {
+    warnings.push(relative + ': hooks must be an object; reconcile manually.');
+    return;
+  }
+  const starts = settings.hooks?.SessionStart ?? [];
+  if (!Array.isArray(starts)) { warnings.push(relative + ': SessionStart must be a list.'); return; }
+  const managed = starts.filter(routingEntry);
+  if (managed.some(entry => !intactRouting(entry))) {
+    warnings.push(relative + ': preserved customized Handbook workflow routing hook; reconcile it manually.');
+    return;
+  }
+  let wanted;
+  if (enabled && source) {
+    const guide = path.join(source, routingGuide);
+    const section = existsSync(guide) ? read(guide).trim() : '';
+    if (!validRoutingText(section)) {
+      warnings.push(routingGuide + ': expected a Workflow adherence section under 10000 characters; preserved existing routing.');
+      return;
+    }
+    wanted = routingHook(section);
+  } else if (enabled && !managed.length) {
+    warnings.push(relative + ': run handbook:sync with a reviewed source to install workflow routing.');
+    return;
+  } else if (enabled) {
+    wanted = managed[0];
+  }
+  if (managed.length === (wanted ? 1 : 0) && (!wanted || JSON.stringify(managed[0]) === JSON.stringify(wanted))) return;
+  warnings.push(relative + ': Handbook workflow routing drift.');
+  if (!write) return;
+  const next = starts.filter(entry => !routingEntry(entry));
+  if (wanted) next.push(wanted);
+  const hooks = { ...settings.hooks };
+  if (next.length) hooks.SessionStart = next;
+  else delete hooks.SessionStart;
+  if (Object.keys(hooks).length) settings.hooks = hooks;
+  else delete settings.hooks;
+  mkdirSync(path.dirname(target), { recursive: true });
+  writeFileSync(target, JSON.stringify(settings, null, 2) + '\n');
+  if (!changed.includes(relative)) changed.push(relative);
+}
+
+const contractStart = '<!-- handbook-session-contract:start -->';
+const contractBlock = /<!-- handbook-session-contract:start -->\n([\s\S]*?)\n<!-- handbook-session-contract:end ([a-f0-9]{64}) -->\n?/;
+// AGENTS.md is the one file every client loads, so the contract is inlined, not linked.
+function syncSessionContract(root, enabled, { write, source, warnings, changed }) {
+  const relative = 'AGENTS.md';
+  const target = local(root, relative).target;
+  if (!existsSync(target)) return;
+  const text = read(target);
+  const match = text.match(contractBlock);
+  if (match && sha(match[1]) !== match[2]) {
+    warnings.push(relative + ': preserved customized Handbook session contract; reconcile it manually.');
+    return;
+  }
+  let wanted = '';
+  if (enabled) {
+    if (!source) {
+      if (!match) warnings.push(relative + ': run handbook:sync with a reviewed source to install the session contract.');
+      return;
+    }
+    const guide = path.join(source, routingGuide);
+    const section = existsSync(guide) ? guideSection(read(guide), contractHeading) : '';
+    if (!filledSection(section, contractHeading) || section.length > contractLimit) {
+      warnings.push(`${routingGuide}: expected a Session contract section within ${contractLimit} characters; preserved ${relative}.`);
+      return;
+    }
+    wanted = `${contractStart}\n${section}\n<!-- handbook-session-contract:end ${sha(section)} -->\n`;
+  }
+  const current = match ? match[0].replace(/\n?$/, '\n') : '';
+  if (current === wanted) return;
+  warnings.push(relative + ': Handbook session contract drift.');
+  if (!write) return;
+  let next;
+  if (match && wanted) next = text.replace(match[0], () => wanted);
+  else if (match) next = text.replace(match[0] + (text.slice(text.indexOf(match[0]) + match[0].length).startsWith('\n') ? '\n' : ''), '');
+  else {
+    // Keep a byte-order mark and YAML front matter first, then any title heading.
+    const bom = text.startsWith('﻿') ? '﻿' : '';
+    let at = bom.length;
+    const front = text.slice(at).match(/^---\n[\s\S]*?\n---\n/);
+    if (front) at += front[0].length;
+    if (text.startsWith('# ', at)) at = (text.indexOf('\n', at) + 1) || text.length;
+    const head = text.slice(0, at);
+    const tail = text.slice(at).replace(/^\n+/, '');
+    next = (at > bom.length ? head.replace(/\n?$/, '\n') + '\n' : head) + wanted + (tail ? '\n' + tail : '');
+  }
+  // Preserve the file's line endings; read() normalizes them for comparison.
+  if (readFileSync(target, 'utf8').includes('\r\n')) next = next.replace(/\n/g, '\r\n');
+  writeFileSync(target, next);
+  if (!changed.includes(relative)) changed.push(relative);
 }
 
 export const gatesFile = '.agents/gated-commands.json';
