@@ -1,5 +1,8 @@
 {
   "unibase": {
     "staging": "vps-ae0a9d01.vps.ovh.net"
+  },
+  "unitale": {
+    "staging": "vps-ae0a9d01.vps.ovh.net"
   }
 }

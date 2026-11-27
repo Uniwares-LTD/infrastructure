@@ -317,8 +317,8 @@ and container protections; it did not change the policy below or enroll Booklet.
 
 Infrastructure owns /etc/uniwares-infrastructure/image-retention.json and the fixed
 /usr/local/sbin/uniwares-image-maintenance command. The
-[example policy](../config/image-retention.example.json) enrolls only Unibase, maps
-staging/prod explicitly, and disables automatic cleanup. Derived-project proposals
+[example policy](../config/image-retention.example.json) enrolls Unibase and Unitale
+(Unitale owner-approved 2026-11-27), maps staging/prod explicitly, and disables automatic cleanup. Derived-project proposals
 grant no enrollment. Other applications require their owners' explicit review.
 
 Retain three distinct successful snapshots per environment and fourteen days of

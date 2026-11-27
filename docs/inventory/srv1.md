@@ -4,6 +4,21 @@ Original discovery observed **2026-10-22**, with subsequent dated evidence below
 This is a sanitized snapshot, not an ongoing health guarantee. No SSH credential
 was supplied and no host change was performed during this discovery.
 
+## Unitale staging registration — proposed 2026-11-27
+
+Reviewed configuration only; nothing below is installed until the Unitale Gate 1 root
+batch and its readback ([Unitale runbook](https://github.com/Uniwares-LTD/unitale/blob/main/docs/staging-first-deployment.md),
+Uniwares-LTD/unitale#21).
+
+| Item | Configured value |
+| --- | --- |
+| Approval target | `unitale.staging` → `vps-ae0a9d01.vps.ovh.net` |
+| Image retention | `ghcr.io/uniwares-ltd/unitale`, staging/prod mapped, `automatic: false` |
+| Hostname and listener | `unitale-staging.uniwares.co.uk` → loopback `34312`, routed by agentic-poc Terraform |
+| Ingress subnet | `172.30.243.0/24` (P0 2026-11-26: no network or route in use; `172.23.251.128/28` conflicts with `minio_default`) |
+| Database | Atlas `kids-booklet`, database and user `unitale_staging` |
+| Controller capabilities | P0 readback 2026-11-26: `operation-lock-v1`, `plans-v2`, `github-oidc-v1`, `image-retention-v1`, `data-operations-v1` |
+
 ## Installed control and capacity — 2026-10-31
 
 These are user-supplied root-session observations and linked workflow evidence, not
