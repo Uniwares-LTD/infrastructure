@@ -13,6 +13,14 @@
         "prod": "production"
       },
       "automatic": false
+    },
+    "unitale": {
+      "imageRepository": "ghcr.io/uniwares-ltd/unitale",
+      "environments": {
+        "staging": "staging",
+        "prod": "production"
+      },
+      "automatic": false
     }
   }
 }
