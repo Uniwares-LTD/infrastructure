@@ -79,15 +79,23 @@ class Host:
         if CAPABILITY not in json.loads((self.source/'deploy/contract.json').read_text()).get('requiredCapabilities',[]):raise ValueError('UNSUPPORTED_CAPABILITY')
         target='production' if environment=='prod' else environment
         self.target=target
-        self.release=(RELEASES/project/target/'current').resolve();d.trusted(self.release)
-        if not self.release.is_relative_to(RELEASES/project/target/'releases'):raise ValueError('UNTRUSTED_RELEASE')
-        self.values=dict(line.split('=',1) for line in (self.release/'compose.env').read_text().splitlines() if '=' in line)
+        current=RELEASES/project/target/'current'
+        # A registered, prepared project has no release before its first activation.
+        self.first=not current.exists() and not current.is_symlink()
+        self.verified_image=None
+        if self.first:
+            self.release=None;self.values={}
+        else:
+            self.release=current.resolve();d.trusted(self.release)
+            if not self.release.is_relative_to(RELEASES/project/target/'releases'):raise ValueError('UNTRUSTED_RELEASE')
+            self.values=dict(line.split('=',1) for line in (self.release/'compose.env').read_text().splitlines() if '=' in line)
         self.runtime=RUNTIME/project/target/'runtime.env';d.trusted(self.runtime)
         self.database=self.config['runtime']['MONGODB_DATABASE']
         if self.runtime.stat().st_mode & 0o077:raise ValueError('UNTRUSTED_RUNTIME')
-        self.compose=['docker','compose','--project-name',project+'-'+target,'--env-file',str(self.release/'compose.env'),'-f',str(self.release/'compose.yml')]
+        self.compose=None if self.first else ['docker','compose','--project-name',project+'-'+target,'--env-file',str(self.release/'compose.env'),'-f',str(self.release/'compose.yml')]
 
     def serving(self):
+        if self.first:return {'imageMatches':False,'ready':False,'sourceCommit':None,'image':None,'firstDeployment':True}
         containers=command(self.compose+['ps','--all','--quiet','app'],self.d).decode().split()
         matches=False
         if len(containers)==1 and re.fullmatch('[a-f0-9]{12,64}',containers[0]):
@@ -113,13 +121,16 @@ class Host:
         return dict(self.observed,configurationHash=digest({'public':self.observed['configurationHash'],'runtime':file_hash(self.runtime),'recovery':file_hash(private),'password':file_hash(password),'controller':{item.name:file_hash(item) for item in sorted(Path(__file__).parent.iterdir()) if item.suffix in ('.py','.cjs')}}))
 
     def base(self,image):
-        return ['docker','run','--rm','-i','--user','1001:1001','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges','--network',self.project+'-'+self.target+'_application','--env-file',str(self.runtime),'--entrypoint','node',image]
+        return ['docker','run','--rm','-i','--user','1001:1001','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges','--network','bridge' if self.first else self.project+'-'+self.target+'_application','--env-file',str(self.runtime),'--entrypoint','node',image]
 
     def probe(self,action,**values):
         script=Path(__file__).with_name('data-operation-probe.cjs');self.d.trusted(script)
         request=dict(action=action,database=self.database,project=self.project,environment=self.environment,**values)
         content=script.read_bytes()+b'\nprobe('+json.dumps(request).encode()+b').then(x=>console.log(JSON.stringify(x))).catch(()=>process.exitCode=1);\n'
-        return json.loads(command(self.base(self.values['IMAGE_DIGEST'])+['-'],self.d,content,timeout=30))
+        # Before the first activation, only the candidate verified by candidate() supplies Node.
+        image=self.verified_image if self.first else self.values['IMAGE_DIGEST']
+        if not image:raise ValueError('IMMUTABLE_IMAGE_REQUIRED')
+        return json.loads(command(self.base(image)+['-'],self.d,content,timeout=30))
 
     def candidate(self,image,commit):
         if not isinstance(image,str) or not re.fullmatch(re.escape(self.config['deployment']['imageRepository'])+r'@sha256:[a-f0-9]{64}',image) or not hex_value(commit,40):raise ValueError('IMMUTABLE_IMAGE_REQUIRED')
@@ -139,8 +150,16 @@ class Host:
                 manifest=catalog(json.loads((root/'migration-manifest.json').read_text()),self.project)
                 from recovery import file_hash
                 if file_hash(root/'migration-runner.cjs')!=manifest['runnerSha256']:raise ValueError('RUNNER_DIGEST_MISMATCH')
+                self.verified_image=image
                 return manifest
             finally:command(['docker','rm','-f','-v',container],self.d)
+
+
+def first_deployment(result):
+    """Without a serving release no migration plan can run; required work is owner action."""
+    if result['activationDecision']=='blocked-migrations':
+        result.update(activationDecision='owner-action-required',nextAction='First deployment: apply required migrations through the project host preparation before first activation.')
+    return result
 
 
 def evidence(store,plan):
@@ -395,6 +414,10 @@ def route(d,store,request):
             return dict(version=2,planId=previous['envelope']['digest'],**previous['envelope'],**previous.get('report',{}))
     host=Host(d,project,environment)
     if request['configurationHash']!=host.observed['configurationHash']:raise ValueError('HOST_STATE_CHANGED')
+    first=getattr(host,'first',False)
+    if first and (action=='migrate' or not request['image'] or not request['commit']):
+        # Approved migration plans need a serving release to stop and restore writers.
+        raise ValueError('IMMUTABLE_IMAGE_REQUIRED' if action=='migrations' else 'OWNER_ACTION_REQUIRED')
     image=request['image'] or host.values['IMAGE_DIGEST'];commit=request['commit'] or host.values['RELEASE_COMMIT']
     if action=='migrate' and (not request['image'] or not request['commit']):raise ValueError('IMMUTABLE_IMAGE_REQUIRED')
     try:manifest=host.candidate(image,commit);ledger=host.probe('ledger')
@@ -402,7 +425,8 @@ def route(d,store,request):
         return dict(version=1,project=project,environment=environment,database=host.database,sourceCommit=commit,image=image,deploymentOutcome='not-attempted',migrationOutcome='unknown',activationDecision='owner-action-required',nextAction='Verify the candidate package/source labels and the approved image Node/MongoDB probe prerequisite with Infrastructure.')
     result=activation(store,manifest,ledger,environment,host.database)
     serving=host.serving()
-    if result['activationDecision']!='blocked-recovery' and (not serving['imageMatches'] or (not serving['ready'] and (result['required'] or action=='migrate'))):
+    if first:first_deployment(result)
+    elif result['activationDecision']!='blocked-recovery' and (not serving['imageMatches'] or (not serving['ready'] and (result['required'] or action=='migrate'))):
         result.update(activationDecision='owner-action-required',nextAction='Reconcile the observed serving image/revision and readiness before preparing data work.')
     result['serving']=serving
     result.update(environment=environment,database=host.database,sourceCommit=commit,image=image,manifestDigest=identity(manifest),deploymentOutcome='not-attempted',migrationOutcome='pending' if result['pending'] else 'not-required')

@@ -146,6 +146,75 @@ class PreparationTests(unittest.TestCase):
     self.assertEqual(nothing['migrationOutcome'],'not-required');self.assertFalse(list(empty.root.glob('*.plan.json')))
 
 
+class FirstDeploymentTests(unittest.TestCase):
+ def route(self,ledger,action='migrations',**extra):
+  source=plan()['plan']
+  class Host:
+   first=True;database='fixture_staging';values={}
+   def __init__(self,*args):self.observed=source['expected']
+   def serving(self):return {'imageMatches':False,'ready':False,'sourceCommit':None,'image':None,'firstDeployment':True}
+   def candidate(self,*args):return MANIFEST
+   def probe(self,*args):return ledger
+  request=dict(version=2,project='fixture',environment='staging',action=action,requiredCapabilities=['data-operations-v1'],configurationHash=source['configurationHash'],image=source['image'],commit=source['sourceCommit'],**extra)
+  with tempfile.TemporaryDirectory() as temp,patch.object(data,'Host',Host):
+   return data.route(None,PlanStore(Path(temp)/'plans'),request)
+
+ def test_report_without_a_release_proceeds_only_when_required_migrations_are_applied(self):
+  ready=self.route(LEDGER)
+  self.assertEqual(ready['activationDecision'],'proceed');self.assertTrue(ready['serving']['firstDeployment'])
+  blocked=self.route([])
+  self.assertEqual(blocked['activationDecision'],'owner-action-required');self.assertIn('First deployment',blocked['nextAction'])
+
+ def test_migration_plans_and_implicit_images_are_refused_without_a_release(self):
+  with self.assertRaisesRegex(ValueError,'OWNER_ACTION_REQUIRED'):
+   self.route([],action='migrate',requestId='55555555-5555-4555-8555-555555555555')
+  with self.assertRaisesRegex(ValueError,'IMMUTABLE_IMAGE_REQUIRED'):
+   source=plan()['plan']
+   class Host:
+    first=True;values={}
+    def __init__(self,*args):self.observed=source['expected']
+   with tempfile.TemporaryDirectory() as temp,patch.object(data,'Host',Host):
+    data.route(None,PlanStore(Path(temp)/'plans'),dict(version=2,project='fixture',environment='staging',action='migrations',requiredCapabilities=['data-operations-v1'],configurationHash=source['configurationHash'],image=None,commit=None))
+
+ def test_probe_uses_only_the_verified_candidate_on_the_default_bridge(self):
+  host=object.__new__(data.Host)
+  host.first=True;host.values={};host.verified_image=None;host.project='fixture';host.target='staging';host.environment='staging';host.database='fixture_staging';host.runtime=Path('/etc/fixture/staging/runtime.env')
+  host.d=SimpleNamespace(trusted=lambda path:None,ENV={})
+  with self.assertRaisesRegex(ValueError,'IMMUTABLE_IMAGE_REQUIRED'):host.probe('ledger')
+  host.verified_image='ghcr.io/test/fixture@sha256:'+'d'*64;calls=[]
+  with patch.object(data,'command',lambda args,*rest,**kw:calls.append(args) or b'[]'):
+   self.assertEqual(host.probe('ledger'),[])
+  args=calls[0];self.assertEqual(args[args.index('--network')+1],'bridge');self.assertEqual(args[-2],host.verified_image)
+  self.assertEqual(host.serving()['firstDeployment'],True)
+
+
+class FirstDeploymentHostTests(unittest.TestCase):
+ def host(self,link):
+  import operation_engine
+  with tempfile.TemporaryDirectory() as temp:
+   root=Path(temp);source=root/'source';(source/'deploy').mkdir(parents=True)
+   (source/'deploy/contract.json').write_text(json.dumps({'requiredCapabilities':['operation-lock-v1','data-operations-v1']}))
+   runtime=root/'etc/fixture/staging';runtime.mkdir(parents=True);(runtime/'runtime.env').write_text('');(runtime/'runtime.env').chmod(0o600)
+   releases=root/'opt/fixture/staging';(releases/'releases/r1').mkdir(parents=True);(releases/'releases/r1/compose.env').write_text('IMAGE_DIGEST=x'+chr(10)+'RELEASE_COMMIT=y'+chr(10))
+   if link=='valid':(releases/'current').symlink_to(releases/'releases/r1')
+   elif link=='dangling':(releases/'current').symlink_to(releases/'releases/missing')
+   d=SimpleNamespace(trusted=lambda path:None,ENV={})
+   with patch.object(operation_engine,'state',lambda *a:(source,{'runtime':{'MONGODB_DATABASE':'fixture_staging'}},{})),patch.object(operation_engine,'RELEASES',root/'opt'),patch.object(operation_engine,'RUNTIME',root/'etc'):
+    return data.Host(d,'fixture','staging')
+
+ @unittest.skipIf(sys.platform=='win32','POSIX symlink and mode semantics')
+ def test_only_a_missing_current_link_is_a_first_deployment(self):
+  first=self.host(None);self.assertTrue(first.first);self.assertIsNone(first.compose);self.assertEqual(first.values,{})
+  deployed=self.host('valid');self.assertFalse(deployed.first);self.assertEqual(deployed.values['IMAGE_DIGEST'],'x')
+  with self.assertRaises(OSError):self.host('dangling')
+
+ def test_first_deployment_decision_is_shared_with_the_activation_gate(self):
+  self.assertEqual(data.first_deployment({'activationDecision':'blocked-migrations','nextAction':''})['activationDecision'],'owner-action-required')
+  self.assertEqual(data.first_deployment({'activationDecision':'proceed'})['activationDecision'],'proceed')
+  gate=(Path(data.__file__).with_name('data-operation-gate.py')).read_text()
+  self.assertIn('if host.first:first_deployment(report)',gate)
+
+
 class ConfigurationIdentityTests(unittest.TestCase):
  def test_private_input_and_controller_identity_is_bound_without_exposing_secrets(self):
   with tempfile.TemporaryDirectory() as temp:

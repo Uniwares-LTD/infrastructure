@@ -680,6 +680,21 @@ need owner action. No candidate code executes before approval and no driver is i
 as a fallback. Restricted report/status details are paged; clients retain complete
 reviewed details as artifacts.
 
+Before a registered project's first activation there is no current release and no
+approved image. The report and the activation gate then run the same fixed probe in
+the exact candidate digest that preparation pulled and verified, on Docker's default
+`bridge` network because the application network does not exist yet. This is the only
+case where candidate image bytes run before activation; the release that requested the
+report is the deployment decision for that same digest. Without a release, a report
+proceeds only when no `before-release` migration is pending; otherwise it returns
+owner action, and the project's own host preparation applies them before first
+activation. `migrate` plans and reports without an explicit image and commit are
+refused, since approved plans stop and restore a serving release's writers.
+The candidate receives the protected `runtime.env`, so its `MONGODB_URI` must be
+reachable from the default bridge (for example an external Atlas host); a
+compose-only database host fails closed as owner action. A missing `current` link
+means first deployment; a dangling link is not treated as one and fails closed.
+
 Use the application's report/prepare/status workflow and this repository's existing
 Apply deployment plan workflow on the reviewed published `main`, with configured
 project/environment and exact plan ID/digest. Publishing a new executor requires updating

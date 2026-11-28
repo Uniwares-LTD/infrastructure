@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 import sys
 sys.path.insert(0,str(Path(__file__).resolve().parent))
-from data_operations import Host,activation,public_page
+from data_operations import Host,activation,first_deployment,public_page
 from operation_store import PlanStore
 
 def main():
@@ -23,6 +23,7 @@ def main():
     fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
     host=Host(d,project,environment);manifest=host.candidate(image,commit)
     report=activation(PlanStore(d.STATE/project/'operation-plans'),manifest,host.probe('ledger'),environment,host.database)
+    if host.first:first_deployment(report)
     print(json.dumps(public_page(report),separators=(',',':')))
     return 0 if report['activationDecision']=='proceed' else 3
 
